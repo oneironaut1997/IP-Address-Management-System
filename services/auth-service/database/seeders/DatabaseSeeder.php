@@ -3,23 +3,58 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
+/**
+ * Class DatabaseSeeder
+ *
+ * Main database seeder for the auth service.
+ * Seeds roles and initial admin user.
+ *
+ * @package Database\Seeders
+ */
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
     /**
      * Seed the application's database.
+     *
+     * @return void
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        $this->call([
+            RolesSeeder::class,
         ]);
+
+        // Create initial super admin user
+        $this->createSuperAdmin();
+
+        $this->command->info('Database seeding completed successfully!');
+    }
+
+    /**
+     * Create the initial super admin user.
+     *
+     * @return void
+     */
+    protected function createSuperAdmin(): void
+    {
+        $adminEmail = 'admin@example.com';
+
+        $user = User::firstOrCreate(
+            ['email' => $adminEmail],
+            [
+                'email' => $adminEmail,
+                'password' => Hash::make('password'),
+                'role' => 'super_admin',
+            ]
+        );
+
+        // Assign super_admin role using Spatie
+        $user->assignRole('super_admin');
+
+        $this->command->info("Super admin user created/updated: {$adminEmail}");
+        $this->command->warn('Default password: "password" - Change in production!');
     }
 }
