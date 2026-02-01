@@ -26,7 +26,7 @@ RUN apk add --no-cache \
     zip \
     unzip \
     # MySQL client for database connectivity testing
-    mysql-client \
+    mariadb-client \
     # Redis extension dependencies
     redis \
     # Install PHP extensions

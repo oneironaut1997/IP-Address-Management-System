@@ -26,7 +26,7 @@ RUN apk add --no-cache \
     zip \
     unzip \
     # MySQL client for database connectivity testing
-    mysql-client \
+    mariadb-client \
     # Install PHP extensions
     && docker-php-ext-install \
         pdo_mysql \
