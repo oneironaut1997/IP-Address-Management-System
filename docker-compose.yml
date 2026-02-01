@@ -1,0 +1,311 @@
+# =============================================================================
+# Docker Compose Configuration for IP Address Management System (IPMS)
+# =============================================================================
+# This file defines the complete Docker infrastructure for the IPMS application
+# including three Laravel microservices, two MySQL databases, and Redis.
+#
+# Services:
+#   - gateway:        API Gateway (Laravel) - Port 8000
+#   - auth-service:   Authentication Service (Laravel) - Port 8001
+#   - ip-management:  IP Management Service (Laravel) - Port 8002
+#   - auth-db:        MySQL 8.0 for Auth Service - Port 3306
+#   - ip-db:          MySQL 8.0 for IP Management Service - Port 3307
+#   - redis:          Redis 7 for sessions and refresh tokens - Port 6379
+#
+# Reference: docs/architecture_overview.md Section 7 (Deployment View)
+# =============================================================================
+
+version: '3.8'
+
+# -----------------------------------------------------------------------------
+# Network Configuration
+# -----------------------------------------------------------------------------
+networks:
+  ipms-network:
+    driver: bridge
+    name: ipms-network
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+# -----------------------------------------------------------------------------
+# Persistent Volumes
+# -----------------------------------------------------------------------------
+volumes:
+  auth-db-data:
+    driver: local
+  ip-db-data:
+    driver: local
+  redis-data:
+    driver: local
+
+# -----------------------------------------------------------------------------
+# Services
+# -----------------------------------------------------------------------------
+services:
+
+  # ===========================================================================
+  # Gateway Service - API Entry Point
+  # ===========================================================================
+  # The Gateway acts as the single entry point for all API requests.
+  # It handles JWT validation, CORS, and routes requests to backend services.
+  # Port: 8000 (external) -> 8000 (internal)
+  # Dependencies: auth-service, ip-management, redis
+  # ===========================================================================
+  gateway:
+    build:
+      context: ./services/gateway
+      dockerfile: Dockerfile
+    container_name: ipms-gateway
+    hostname: gateway
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./services/gateway:/var/www/html
+      - gateway-vendor:/var/www/html/vendor
+      - gateway-storage:/var/www/html/storage
+    environment:
+      - APP_NAME=IPMS-Gateway
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - APP_URL=http://localhost:8000
+      - DB_CONNECTION=mysql
+      - DB_HOST=auth-db
+      - DB_PORT=3306
+      - DB_DATABASE=gateway_db
+      - DB_USERNAME=gateway_user
+      - DB_PASSWORD=gateway_pass
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=null
+      - JWT_SECRET=${JWT_SECRET_GATEWAY:-your-jwt-secret-key-here}
+      - JWT_TTL=60
+      - JWT_REFRESH_TTL=20160
+      - AUTH_SERVICE_URL=http://auth-service:8000
+      - IP_SERVICE_URL=http://ip-management:8000
+    networks:
+      - ipms-network
+    depends_on:
+      auth-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "php", "artisan", "--version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ===========================================================================
+  # Auth Service - Authentication & User Management
+  # ===========================================================================
+  # Handles user authentication, JWT token generation, role management,
+  # and session tracking. Stores refresh tokens in Redis.
+  # Port: 8001 (external) -> 8000 (internal)
+  # Dependencies: auth-db, redis
+  # ===========================================================================
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+    container_name: ipms-auth-service
+    hostname: auth-service
+    restart: unless-stopped
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./services/auth-service:/var/www/html
+      - auth-vendor:/var/www/html/vendor
+      - auth-storage:/var/www/html/storage
+    environment:
+      - APP_NAME=IPMS-Auth
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - APP_URL=http://localhost:8001
+      - DB_CONNECTION=mysql
+      - DB_HOST=auth-db
+      - DB_PORT=3306
+      - DB_DATABASE=auth_db
+      - DB_USERNAME=auth_user
+      - DB_PASSWORD=auth_pass
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=null
+      - JWT_SECRET=${JWT_SECRET_AUTH:-your-jwt-secret-key-here}
+      - JWT_TTL=60
+      - JWT_REFRESH_TTL=10080
+    networks:
+      - ipms-network
+    depends_on:
+      auth-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "php", "artisan", "--version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ===========================================================================
+  # IP Management Service - IP CRUD & Audit Logging
+  # ===========================================================================
+  # Manages IP address CRUD operations, authorization policies,
+  # and comprehensive audit logging for all changes.
+  # Port: 8002 (external) -> 8000 (internal)
+  # Dependencies: ip-db, redis
+  # ===========================================================================
+  ip-management:
+    build:
+      context: ./services/ip-management
+      dockerfile: Dockerfile
+    container_name: ipms-ip-management
+    hostname: ip-management
+    restart: unless-stopped
+    ports:
+      - "8002:8000"
+    volumes:
+      - ./services/ip-management:/var/www/html
+      - ip-vendor:/var/www/html/vendor
+      - ip-storage:/var/www/html/storage
+    environment:
+      - APP_NAME=IPMS-IPManagement
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - APP_URL=http://localhost:8002
+      - DB_CONNECTION=mysql
+      - DB_HOST=ip-db
+      - DB_PORT=3306
+      - DB_DATABASE=ip_db
+      - DB_USERNAME=ip_user
+      - DB_PASSWORD=ip_pass
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=null
+      - JWT_SECRET=${JWT_SECRET_IP:-your-jwt-secret-key-here}
+      - JWT_TTL=60
+    networks:
+      - ipms-network
+    depends_on:
+      ip-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "php", "artisan", "--version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ===========================================================================
+  # Auth Database - MySQL 8.0
+  # ===========================================================================
+  # Stores user data, sessions, roles, and authentication-related information.
+  # Uses persistent volume for data durability.
+  # Port: 3306 (external) -> 3306 (internal)
+  # ===========================================================================
+  auth-db:
+    image: mysql:8.0
+    container_name: ipms-auth-db
+    hostname: auth-db
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    volumes:
+      - auth-db-data:/var/lib/mysql
+      - ./docker/mysql/auth-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_password_auth
+      - MYSQL_DATABASE=auth_db
+      - MYSQL_USER=auth_user
+      - MYSQL_PASSWORD=auth_pass
+      - MYSQL_ALLOW_EMPTY_PASSWORD=no
+      - MYSQL_ROOT_HOST=%
+    networks:
+      - ipms-network
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ===========================================================================
+  # IP Database - MySQL 8.0
+  # ===========================================================================
+  # Stores IP addresses, audit logs, and change history.
+  # Uses persistent volume for data durability.
+  # Port: 3307 (external) -> 3306 (internal)
+  # ===========================================================================
+  ip-db:
+    image: mysql:8.0
+    container_name: ipms-ip-db
+    hostname: ip-db
+    restart: unless-stopped
+    ports:
+      - "3307:3306"
+    volumes:
+      - ip-db-data:/var/lib/mysql
+      - ./docker/mysql/ip-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_password_ip
+      - MYSQL_DATABASE=ip_db
+      - MYSQL_USER=ip_user
+      - MYSQL_PASSWORD=ip_pass
+      - MYSQL_ALLOW_EMPTY_PASSWORD=no
+      - MYSQL_ROOT_HOST=%
+    networks:
+      - ipms-network
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ===========================================================================
+  # Redis Cache - Redis 7
+  # ===========================================================================
+  # Stores refresh tokens with TTL, session data, and caching.
+  # Critical for JWT refresh token rotation and distributed token validation.
+  # Port: 6379 (external) -> 6379 (internal)
+  # ===========================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: ipms-redis
+    hostname: redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+      - ./docker/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    networks:
+      - ipms-network
+    command: redis-server /usr/local/etc/redis/redis.conf
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+# -----------------------------------------------------------------------------
+# Named volumes for vendor and storage (performance optimization)
+# -----------------------------------------------------------------------------
+volumes:
+  auth-db-data:
+  ip-db-data:
+  redis-data:
+  gateway-vendor:
+  auth-vendor:
+  ip-vendor:
+  gateway-storage:
+  auth-storage:
+  ip-storage:

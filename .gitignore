@@ -1,10 +1,15 @@
-# Documentation
-docs/
+# =============================================================================
+# Root Gitignore for IP Address Management System
+# =============================================================================
 
 # Environment files
 .env
 .env.local
 .env.*.local
+
+# Docker volumes and data
+docker/data/
+*.volume
 
 # IDE
 .idea/
@@ -12,48 +17,26 @@ docs/
 *.swp
 *.swo
 *~
+
+# OS
 .DS_Store
+Thumbs.db
 
-# Docker
-.docker/
-docker-compose.override.yml
+# Logs
+*.log
+logs/
 
-# Node.js
+# Temp files
+*.tmp
+*.temp
+.cache/
+
+# Node modules (at root level if any)
 node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-package-lock.json
-yarn.lock
 
-# PHP
-/vendor/
-composer.phar
-.phpunit.result.cache
-.php_cs.cache
-.php-cs-fixer.cache
-
-# Laravel
-storage/*.key
-storage/logs/*.log
-storage/framework/cache/data/*
-storage/framework/sessions/*
-storage/framework/testing/*
-storage/framework/views/*
-!storage/framework/cache/data/.gitignore
-!storage/framework/sessions/.gitignore
-!storage/framework/testing/.gitignore
-!storage/framework/views/.gitignore
-!storage/logs/.gitignore
-bootstrap/cache/*
-!bootstrap/cache/.gitignore
-
-# Testing
-.phpunit.cache/
-coverage/
+# Vendor directories (at root level if any)
+vendor/
 
 # Build artifacts
 dist/
 build/
-*.tar.gz
-*.zip
