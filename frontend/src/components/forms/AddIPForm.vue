@@ -93,6 +93,7 @@
 
 <script setup lang="ts">
 import { reactive, computed } from 'vue'
+import { useToast } from 'vue-toastification'
 import { useIPStore } from '@/stores/ip'
 import type { IPFormData } from '@/types'
 
@@ -107,9 +108,10 @@ interface Emits {
 const emit = defineEmits<Emits>()
 
 /**
- * IP Store
+ * Stores & Services
  */
 const ipStore = useIPStore()
+const toast = useToast()
 
 /**
  * Form State
@@ -206,6 +208,9 @@ async function handleSubmit(): Promise<void> {
       comment: form.comment?.trim() || undefined,
     })
 
+    // Show success toast
+    toast.success('IP address created successfully')
+
     // Reset form
     form.ip_address = ''
     form.label = ''
@@ -215,7 +220,8 @@ async function handleSubmit(): Promise<void> {
     emit('created')
     emit('close')
   } catch {
-    // Error is handled by the store
+    // Show error toast
+    toast.error('Failed to create IP address')
   }
 }
 </script>
