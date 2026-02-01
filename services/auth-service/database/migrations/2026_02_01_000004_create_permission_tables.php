@@ -50,7 +50,7 @@ return new class extends Migration
             }
         });
 
-        Schema::create($tableNames['model_has_permissions'], function (Blueprint $table) use ($tableNames, $columnNames, $pivotPermission) {
+        Schema::create($tableNames['model_has_permissions'], function (Blueprint $table) use ($teams, $tableNames, $columnNames, $pivotPermission) {
             $table->unsignedBigInteger($pivotPermission);
 
             $table->string('model_type');
@@ -73,7 +73,7 @@ return new class extends Migration
             }
         });
 
-        Schema::create($tableNames['model_has_roles'], function (Blueprint $table) use ($tableNames, $columnNames, $pivotRole) {
+        Schema::create($tableNames['model_has_roles'], function (Blueprint $table) use ($teams, $tableNames, $columnNames, $pivotRole) {
             $table->unsignedBigInteger($pivotRole);
 
             $table->string('model_type');

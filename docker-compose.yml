@@ -29,17 +29,6 @@ networks:
         - subnet: 172.20.0.0/16
 
 # -----------------------------------------------------------------------------
-# Persistent Volumes
-# -----------------------------------------------------------------------------
-volumes:
-  auth-db-data:
-    driver: local
-  ip-db-data:
-    driver: local
-  redis-data:
-    driver: local
-
-# -----------------------------------------------------------------------------
 # Services
 # -----------------------------------------------------------------------------
 services:
@@ -295,6 +284,41 @@ services:
       timeout: 3s
       retries: 5
       start_period: 10s
+
+  # ===========================================================================
+  # Frontend - Vue.js 3 Application
+  # ===========================================================================
+  # Vue.js frontend running Vite dev server with Hot Module Replacement (HMR).
+  # Mounts source code as volume for live reloading during development.
+  # Port: 5173 (external) -> 5173 (internal)
+  # Dependencies: gateway (for API calls)
+  # ===========================================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ipms-frontend
+    hostname: frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=http://localhost:8000
+    networks:
+      - ipms-network
+    depends_on:
+      gateway:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5173"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
 # -----------------------------------------------------------------------------
 # Named volumes for vendor and storage (performance optimization)

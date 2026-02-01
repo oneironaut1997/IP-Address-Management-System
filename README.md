@@ -17,16 +17,24 @@ A comprehensive full-stack IP Address Management System built with Laravel micro
 ### System Architecture
 
 ```
-┌─────────────────┐      ┌──────────────────┐      ┌─────────────────┐
-│   Vue Frontend  │──────▶  Gateway Service │──────▶  Auth Service   │
-│   (Port 5173)   │      │   (Port 8000)    │      │   (Port 8001)   │
-└─────────────────┘      └──────────────────┘      └─────────────────┘
-                                │
-                                ▼
-                         ┌──────────────────┐
-                         │  IP Management   │
-                         │  (Port 8002)     │
-                         └──────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           Docker Environment                             │
+│                                                                          │
+│  ┌─────────────────┐      ┌──────────────────┐      ┌─────────────────┐ │
+│  │   Vue Frontend  │──────▶  Gateway Service │──────▶  Auth Service   │ │
+│  │   (Port 5173)   │      │   (Port 8000)    │      │   (Port 8001)   │ │
+│  └─────────────────┘      └──────────────────┘      └─────────────────┘ │
+│  │    Container    │      │     Container    │      │    Container    │ │
+│  └─────────────────┘      └──────────────────┘      └─────────────────┘ │
+│                                  │                                       │
+│                                  ▼                                       │
+│                           ┌──────────────────┐                          │
+│                           │  IP Management   │                          │
+│                           │  (Port 8002)     │                          │
+│                           └──────────────────┘                          │
+│                           │    Container     │                          │
+│                           └──────────────────┘                          │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Tech Stack
@@ -34,9 +42,9 @@ A comprehensive full-stack IP Address Management System built with Laravel micro
 | Layer | Technology |
 |-------|------------|
 | **Frontend** | Vue 3 + TypeScript + Pinia |
-| **API Gateway** | Laravel 11 |
-| **Auth Service** | Laravel 11 + JWT + Redis |
-| **IP Service** | Laravel 11 + Activity Log |
+| **API Gateway** | Laravel 12 |
+| **Auth Service** | Laravel 12 + JWT + Redis |
+| **IP Service** | Laravel 12 + Activity Log |
 | **Databases** | MySQL 8.0 (separate per service) |
 | **Cache** | Redis 7 |
 | **Containerization** | Docker + Docker Compose |
@@ -54,8 +62,8 @@ A comprehensive full-stack IP Address Management System built with Laravel micro
 
 - Docker Engine 24.x or higher
 - Docker Compose 2.x or higher
-- Node.js 20+ (for local frontend development)
-- Composer 2.x (for local PHP development)
+- (Optional) Node.js 20+ and npm - only needed for local frontend development outside Docker
+- (Optional) Composer 2.x - only needed for local PHP development outside Docker
 
 ## Installation
 
@@ -89,19 +97,24 @@ docker-compose up -d --build
 
 ```bash
 # Auth Service migrations with seed data
-docker exec -it auth-service php artisan migrate --seed
+docker exec -it ipms-auth-service php artisan migrate:fresh --seed
 
 # IP Management Service migrations
-docker exec -it ip-management php artisan migrate
+docker exec -it ipms-ip-management php artisan migrate:fresh
 ```
 
 ### 5. Verify Installation
 
-Access the following URLs:
-- Frontend: http://localhost:5173
-- Gateway API: http://localhost:8000
-- Auth Service: http://localhost:8001
-- IP Management: http://localhost:8002
+Once all containers are running, access the application:
+
+| Service | URL | Description |
+|---------|-----|-------------|
+| **Frontend** | http://localhost:5173 | Vue.js 3 web interface |
+| **Gateway API** | http://localhost:8000 | API Gateway endpoint |
+| **Auth Service** | http://localhost:8001 | Authentication service (internal) |
+| **IP Management** | http://localhost:8002 | IP management service (internal) |
+
+All services are now running in Docker containers with automatic restart enabled.
 
 ### Default Credentials
 
@@ -177,14 +190,23 @@ curl -X POST http://localhost:8000/api/ip \
 
 ```bash
 # Auth Service tests
-docker exec -it auth-service php artisan test
+docker exec -it ipms-auth-service php artisan test
 
 # IP Management tests
-docker exec -it ip-management php artisan test
+docker exec -it ipms-ip-management php artisan test
 ```
 
 #### Frontend Tests
 
+You can run tests either inside the Docker container or locally:
+
+**Option 1: Inside Docker Container**
+```bash
+# Run tests inside the running frontend container
+docker exec -it ipms-frontend npm run test
+```
+
+**Option 2: Local Development (requires Node.js)**
 ```bash
 cd frontend
 npm install
@@ -203,6 +225,13 @@ npm run test
 
 #### TypeScript/Vue
 - Use ESLint and Prettier for formatting
+
+  **Using Docker:**
+  ```bash
+  docker exec -it ipms-frontend npm run lint
+  ```
+
+  **Local Development:**
   ```bash
   cd frontend
   npm run lint
@@ -308,6 +337,7 @@ ip-management-system/
 docker-compose logs -f gateway
 docker-compose logs -f auth-service
 docker-compose logs -f ip-management
+docker-compose logs -f frontend
 ```
 
 ## License

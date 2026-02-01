@@ -25,15 +25,15 @@ class RolesSeeder extends Seeder
      */
     public function run(): void
     {
-        // Create regular user role
+        // Create regular user role for web guard (default)
         Role::firstOrCreate(
-            ['name' => 'regular', 'guard_name' => 'api'],
+            ['name' => 'regular', 'guard_name' => 'web'],
             ['name' => 'regular']
         );
 
-        // Create super admin role
+        // Create super admin role for web guard (default)
         Role::firstOrCreate(
-            ['name' => 'super_admin', 'guard_name' => 'api'],
+            ['name' => 'super_admin', 'guard_name' => 'web'],
             ['name' => 'super_admin']
         );
 

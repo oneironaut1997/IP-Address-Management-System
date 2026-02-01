@@ -157,6 +157,12 @@ class AuthController extends Controller
         $user = JWTAuth::user();
 
         if ($user) {
+            // Parse the token from the request
+            $token = $this->getTokenFromRequest($request);
+            if ($token) {
+                JWTAuth::setToken($token);
+            }
+
             // Get the JTI from the current token
             $payload = JWTAuth::getPayload();
             $jti = $payload->get('jti');

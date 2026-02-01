@@ -16,6 +16,7 @@ WORKDIR /var/www/html
 RUN apk add --no-cache \
     # Build dependencies
     $PHPIZE_DEPS \
+    linux-headers \
     # System utilities
     bash \
     git \
