@@ -10,8 +10,6 @@ use Tests\TestCase;
  * Class UpdateIPTest
  *
  * Feature tests for IP address update endpoint.
- *
- * @package Tests\Feature\IP
  */
 class UpdateIPTest extends TestCase
 {
@@ -19,8 +17,6 @@ class UpdateIPTest extends TestCase
 
     /**
      * Test owner can update their own IP address.
-     *
-     * @return void
      */
     public function test_owner_can_update_own_ip(): void
     {
@@ -59,8 +55,6 @@ class UpdateIPTest extends TestCase
 
     /**
      * Test non-owner cannot update others' IP addresses.
-     *
-     * @return void
      */
     public function test_non_owner_cannot_update_others_ip(): void
     {
@@ -97,8 +91,6 @@ class UpdateIPTest extends TestCase
 
     /**
      * Test super admin can update any IP address.
-     *
-     * @return void
      */
     public function test_super_admin_can_update_any_ip(): void
     {
@@ -130,8 +122,6 @@ class UpdateIPTest extends TestCase
 
     /**
      * Test update fails for non-existent IP.
-     *
-     * @return void
      */
     public function test_cannot_update_nonexistent_ip(): void
     {
@@ -155,8 +145,6 @@ class UpdateIPTest extends TestCase
 
     /**
      * Test validation requires label field.
-     *
-     * @return void
      */
     public function test_update_requires_label(): void
     {
@@ -182,8 +170,6 @@ class UpdateIPTest extends TestCase
 
     /**
      * Test update logs activity with changes.
-     *
-     * @return void
      */
     public function test_update_logs_activity_with_changes(): void
     {

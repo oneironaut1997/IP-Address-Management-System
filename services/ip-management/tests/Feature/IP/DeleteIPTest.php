@@ -10,8 +10,6 @@ use Tests\TestCase;
  * Class DeleteIPTest
  *
  * Feature tests for IP address deletion endpoint.
- *
- * @package Tests\Feature\IP
  */
 class DeleteIPTest extends TestCase
 {
@@ -19,8 +17,6 @@ class DeleteIPTest extends TestCase
 
     /**
      * Test only super_admin can delete IP addresses.
-     *
-     * @return void
      */
     public function test_only_super_admin_can_delete(): void
     {
@@ -53,8 +49,6 @@ class DeleteIPTest extends TestCase
 
     /**
      * Test regular user cannot delete IP addresses.
-     *
-     * @return void
      */
     public function test_regular_user_cannot_delete(): void
     {
@@ -90,8 +84,6 @@ class DeleteIPTest extends TestCase
 
     /**
      * Test delete fails for non-existent IP.
-     *
-     * @return void
      */
     public function test_cannot_delete_nonexistent_ip(): void
     {
@@ -113,8 +105,6 @@ class DeleteIPTest extends TestCase
 
     /**
      * Test delete logs activity.
-     *
-     * @return void
      */
     public function test_delete_logs_activity(): void
     {

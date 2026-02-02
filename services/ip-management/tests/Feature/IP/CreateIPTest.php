@@ -10,8 +10,6 @@ use Tests\TestCase;
  * Class CreateIPTest
  *
  * Feature tests for IP address creation endpoint.
- *
- * @package Tests\Feature\IP
  */
 class CreateIPTest extends TestCase
 {
@@ -19,8 +17,6 @@ class CreateIPTest extends TestCase
 
     /**
      * Test creating an IP address with valid IPv4.
-     *
-     * @return void
      */
     public function test_can_create_ipv4_address(): void
     {
@@ -67,8 +63,6 @@ class CreateIPTest extends TestCase
 
     /**
      * Test creating an IP address with valid IPv6.
-     *
-     * @return void
      */
     public function test_can_create_ipv6_address(): void
     {
@@ -95,8 +89,6 @@ class CreateIPTest extends TestCase
 
     /**
      * Test creating an IP with invalid format fails.
-     *
-     * @return void
      */
     public function test_cannot_create_invalid_ip(): void
     {
@@ -122,8 +114,6 @@ class CreateIPTest extends TestCase
 
     /**
      * Test validation requires ip_address field.
-     *
-     * @return void
      */
     public function test_requires_ip_address(): void
     {
@@ -142,8 +132,6 @@ class CreateIPTest extends TestCase
 
     /**
      * Test validation requires label field.
-     *
-     * @return void
      */
     public function test_requires_label(): void
     {
@@ -162,8 +150,6 @@ class CreateIPTest extends TestCase
 
     /**
      * Test creating IP logs activity.
-     *
-     * @return void
      */
     public function test_create_logs_activity(): void
     {

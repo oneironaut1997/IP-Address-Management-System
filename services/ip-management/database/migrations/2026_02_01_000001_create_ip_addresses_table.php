@@ -11,8 +11,6 @@ return new class extends Migration
      *
      * Creates the ip_addresses table with UUID primary keys, soft deletes,
      * and support for both IPv4 and IPv6 addresses.
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -33,8 +31,6 @@ return new class extends Migration
 
     /**
      * Reverse the migrations.
-     *
-     * @return void
      */
     public function down(): void
     {

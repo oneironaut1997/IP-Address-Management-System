@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 
 /**
@@ -11,15 +11,11 @@ use Illuminate\Support\Facades\Http;
  *
  * Proxies authentication requests to the auth-service.
  * Handles login, register, refresh, logout, and user info endpoints.
- *
- * @package App\Http\Controllers
  */
 class AuthProxyController extends Controller
 {
     /**
      * Auth service base URL
-     *
-     * @var string
      */
     protected string $authServiceUrl;
 
@@ -36,7 +32,7 @@ class AuthProxyController extends Controller
      *
      * Proxies login request to auth-service and returns tokens.
      *
-     * @param Request $request The HTTP request containing email and password
+     * @param  Request  $request  The HTTP request containing email and password
      * @return JsonResponse The authentication response with tokens
      */
     public function login(Request $request): JsonResponse
@@ -57,7 +53,7 @@ class AuthProxyController extends Controller
      *
      * Proxies registration request to auth-service.
      *
-     * @param Request $request The HTTP request containing user registration data
+     * @param  Request  $request  The HTTP request containing user registration data
      * @return JsonResponse The registration response
      */
     public function register(Request $request): JsonResponse
@@ -78,7 +74,7 @@ class AuthProxyController extends Controller
      *
      * Proxies token refresh request to auth-service using the refresh token.
      *
-     * @param Request $request The HTTP request with Authorization header
+     * @param  Request  $request  The HTTP request with Authorization header
      * @return JsonResponse The new token pair
      */
     public function refresh(Request $request): JsonResponse
@@ -100,7 +96,7 @@ class AuthProxyController extends Controller
      *
      * Proxies logout request to auth-service with user context.
      *
-     * @param Request $request The HTTP request with Authorization header and user context
+     * @param  Request  $request  The HTTP request with Authorization header and user context
      * @return JsonResponse The logout confirmation
      */
     public function logout(Request $request): JsonResponse
@@ -124,7 +120,7 @@ class AuthProxyController extends Controller
      *
      * Proxies user info request to auth-service with user context.
      *
-     * @param Request $request The HTTP request with Authorization header and user context
+     * @param  Request  $request  The HTTP request with Authorization header and user context
      * @return JsonResponse The user data
      */
     public function me(Request $request): JsonResponse

@@ -11,8 +11,6 @@ use Illuminate\Queue\InteractsWithQueue;
  * Class LogUserLogout
  *
  * Listener for UserLoggedOut event that creates an audit log entry.
- *
- * @package App\Listeners
  */
 class LogUserLogout implements ShouldQueue
 {
@@ -22,9 +20,6 @@ class LogUserLogout implements ShouldQueue
      * Handle the event.
      *
      * Creates an immutable audit log entry for the logout event.
-     *
-     * @param UserLoggedOut $event
-     * @return void
      */
     public function handle(UserLoggedOut $event): void
     {

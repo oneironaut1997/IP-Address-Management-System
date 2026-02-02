@@ -10,8 +10,6 @@ use Illuminate\Support\Str;
  *
  * Provides UUID primary key support for Eloquent models.
  * Automatically generates a UUID v4 when creating a new model instance.
- *
- * @package App\Models\Concerns
  */
 trait HasUuid
 {
@@ -20,8 +18,6 @@ trait HasUuid
      *
      * Automatically generates a UUID v4 for the primary key
      * when a new model instance is being created.
-     *
-     * @return void
      */
     protected static function bootHasUuid(): void
     {
@@ -36,8 +32,6 @@ trait HasUuid
      * Get the incrementing status of the model.
      *
      * UUIDs are not auto-incrementing.
-     *
-     * @return bool
      */
     public function getIncrementing(): bool
     {
@@ -48,8 +42,6 @@ trait HasUuid
      * Get the key type of the model.
      *
      * UUIDs are stored as strings.
-     *
-     * @return string
      */
     public function getKeyType(): string
     {

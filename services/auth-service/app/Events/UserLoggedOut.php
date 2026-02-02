@@ -12,8 +12,6 @@ use Illuminate\Queue\SerializesModels;
  *
  * Event fired when a user logs out.
  * Used for audit logging and session cleanup tracking.
- *
- * @package App\Events
  */
 class UserLoggedOut
 {
@@ -21,15 +19,11 @@ class UserLoggedOut
 
     /**
      * The user who logged out.
-     *
-     * @var User
      */
     public User $user;
 
     /**
      * Create a new event instance.
-     *
-     * @param User $user
      */
     public function __construct(User $user)
     {

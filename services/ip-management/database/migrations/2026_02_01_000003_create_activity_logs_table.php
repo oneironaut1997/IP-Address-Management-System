@@ -11,8 +11,6 @@ return new class extends Migration
      *
      * Creates the activity_logs table for Spatie Activity Log.
      * Tracks all user actions for comprehensive audit trails.
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -38,8 +36,6 @@ return new class extends Migration
 
     /**
      * Reverse the migrations.
-     *
-     * @return void
      */
     public function down(): void
     {

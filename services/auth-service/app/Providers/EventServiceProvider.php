@@ -12,8 +12,6 @@ use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvi
  * Class EventServiceProvider
  *
  * Service provider for application event listeners.
- *
- * @package App\Providers
  */
 class EventServiceProvider extends ServiceProvider
 {
@@ -33,8 +31,6 @@ class EventServiceProvider extends ServiceProvider
 
     /**
      * Register any events for your application.
-     *
-     * @return void
      */
     public function boot(): void
     {
@@ -43,8 +39,6 @@ class EventServiceProvider extends ServiceProvider
 
     /**
      * Determine if events and listeners should be automatically discovered.
-     *
-     * @return bool
      */
     public function shouldDiscoverEvents(): bool
     {

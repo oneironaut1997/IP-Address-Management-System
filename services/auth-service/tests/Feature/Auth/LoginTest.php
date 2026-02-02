@@ -11,8 +11,6 @@ use Tests\TestCase;
  * Class LoginTest
  *
  * Feature tests for user login endpoint.
- *
- * @package Tests\Feature\Auth
  */
 class LoginTest extends TestCase
 {
@@ -20,8 +18,6 @@ class LoginTest extends TestCase
 
     /**
      * Test successful login with valid credentials.
-     *
-     * @return void
      */
     public function test_user_can_login_with_valid_credentials(): void
     {
@@ -58,8 +54,6 @@ class LoginTest extends TestCase
 
     /**
      * Test login fails with invalid password.
-     *
-     * @return void
      */
     public function test_login_fails_with_invalid_password(): void
     {
@@ -85,8 +79,6 @@ class LoginTest extends TestCase
 
     /**
      * Test login fails with non-existent email.
-     *
-     * @return void
      */
     public function test_login_fails_with_nonexistent_email(): void
     {
@@ -106,8 +98,6 @@ class LoginTest extends TestCase
 
     /**
      * Test login validation requires email.
-     *
-     * @return void
      */
     public function test_login_requires_email(): void
     {
@@ -121,8 +111,6 @@ class LoginTest extends TestCase
 
     /**
      * Test login validation requires password.
-     *
-     * @return void
      */
     public function test_login_requires_password(): void
     {
@@ -136,8 +124,6 @@ class LoginTest extends TestCase
 
     /**
      * Test login creates user session record.
-     *
-     * @return void
      */
     public function test_login_creates_user_session(): void
     {
@@ -159,8 +145,6 @@ class LoginTest extends TestCase
 
     /**
      * Test super admin user can login.
-     *
-     * @return void
      */
     public function test_super_admin_can_login(): void
     {

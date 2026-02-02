@@ -8,8 +8,6 @@ use Illuminate\Foundation\Http\FormRequest;
  * Class StoreIPRequest
  *
  * Validates IP address creation requests.
- *
- * @package App\Http\Requests
  */
 class StoreIPRequest extends FormRequest
 {
@@ -17,8 +15,6 @@ class StoreIPRequest extends FormRequest
      * Determine if the user is authorized to make this request.
      *
      * All authenticated users can create IP addresses.
-     *
-     * @return bool
      */
     public function authorize(): bool
     {

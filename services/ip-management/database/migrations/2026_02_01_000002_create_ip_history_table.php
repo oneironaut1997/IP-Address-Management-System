@@ -11,8 +11,6 @@ return new class extends Migration
      *
      * Creates the ip_history table for tracking changes to IP addresses.
      * Stores old and new values as JSON for complete audit trail.
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -36,8 +34,6 @@ return new class extends Migration
 
     /**
      * Reverse the migrations.
-     *
-     * @return void
      */
     public function down(): void
     {

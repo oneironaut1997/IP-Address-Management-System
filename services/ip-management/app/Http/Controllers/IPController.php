@@ -16,8 +16,6 @@ use PhpIP\IP;
  *
  * Handles CRUD operations for IP addresses.
  * Implements authorization policies and comprehensive audit logging.
- *
- * @package App\Http\Controllers
  */
 class IPController extends Controller
 {
@@ -25,9 +23,6 @@ class IPController extends Controller
      * Display a listing of all IP addresses.
      *
      * All authenticated users can view all IP addresses.
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function index(Request $request): JsonResponse
     {
@@ -46,9 +41,6 @@ class IPController extends Controller
      *
      * Validates IP format using rlanvin/php-ip library.
      * Logs activity for audit trail.
-     *
-     * @param StoreIPRequest $request
-     * @return JsonResponse
      */
     public function store(StoreIPRequest $request): JsonResponse
     {
@@ -108,15 +100,12 @@ class IPController extends Controller
 
     /**
      * Display the specified IP address.
-     *
-     * @param string $id
-     * @return JsonResponse
      */
     public function show(string $id): JsonResponse
     {
         $ipAddress = IPAddress::with('history')->find($id);
 
-        if (!$ipAddress) {
+        if (! $ipAddress) {
             return response()->json([
                 'success' => false,
                 'error' => [
@@ -137,16 +126,12 @@ class IPController extends Controller
      *
      * Only the owner or super_admin can update an IP address.
      * Tracks changes in both history table and activity log.
-     *
-     * @param UpdateIPRequest $request
-     * @param string $id
-     * @return JsonResponse
      */
     public function update(UpdateIPRequest $request, string $id): JsonResponse
     {
         $ipAddress = IPAddress::find($id);
 
-        if (!$ipAddress) {
+        if (! $ipAddress) {
             return response()->json([
                 'success' => false,
                 'error' => [
@@ -211,16 +196,12 @@ class IPController extends Controller
      *
      * Only super_admin can delete IP addresses.
      * Uses soft deletes for data recovery.
-     *
-     * @param Request $request
-     * @param string $id
-     * @return JsonResponse
      */
     public function destroy(Request $request, string $id): JsonResponse
     {
         $ipAddress = IPAddress::find($id);
 
-        if (!$ipAddress) {
+        if (! $ipAddress) {
             return response()->json([
                 'success' => false,
                 'error' => [
@@ -277,15 +258,12 @@ class IPController extends Controller
 
     /**
      * Get the change history for a specific IP address.
-     *
-     * @param string $id
-     * @return JsonResponse
      */
     public function history(string $id): JsonResponse
     {
         $ipAddress = IPAddress::find($id);
 
-        if (!$ipAddress) {
+        if (! $ipAddress) {
             return response()->json([
                 'success' => false,
                 'error' => [

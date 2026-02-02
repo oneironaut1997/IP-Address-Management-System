@@ -11,8 +11,6 @@ return new class extends Migration
      *
      * Creates the audit_logs table for immutable audit trail storage.
      * Tracks user authentication events and system activities.
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -40,8 +38,6 @@ return new class extends Migration
 
     /**
      * Reverse the migrations.
-     *
-     * @return void
      */
     public function down(): void
     {

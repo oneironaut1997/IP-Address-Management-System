@@ -11,15 +11,11 @@ use Illuminate\Support\Facades\Hash;
  *
  * Main database seeder for the auth service.
  * Seeds roles and initial admin user.
- *
- * @package Database\Seeders
  */
 class DatabaseSeeder extends Seeder
 {
     /**
      * Seed the application's database.
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -35,8 +31,6 @@ class DatabaseSeeder extends Seeder
 
     /**
      * Create the initial super admin user.
-     *
-     * @return void
      */
     protected function createSuperAdmin(): void
     {

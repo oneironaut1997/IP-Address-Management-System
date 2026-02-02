@@ -5,7 +5,6 @@ namespace Tests\Feature\Auth;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Redis;
 use Tests\TestCase;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
@@ -13,8 +12,6 @@ use Tymon\JWTAuth\Facades\JWTAuth;
  * Class TokenRefreshTest
  *
  * Feature tests for token refresh endpoint.
- *
- * @package Tests\Feature\Auth
  */
 class TokenRefreshTest extends TestCase
 {
@@ -22,8 +19,6 @@ class TokenRefreshTest extends TestCase
 
     /**
      * Test successful token refresh.
-     *
-     * @return void
      */
     public function test_user_can_refresh_token_with_valid_refresh_token(): void
     {
@@ -43,7 +38,7 @@ class TokenRefreshTest extends TestCase
 
         // Refresh the token
         $response = $this->postJson('/api/auth/refresh', [], [
-            'Authorization' => 'Bearer ' . $refreshToken,
+            'Authorization' => 'Bearer '.$refreshToken,
         ]);
 
         $response->assertStatus(200)
@@ -69,8 +64,6 @@ class TokenRefreshTest extends TestCase
 
     /**
      * Test token refresh with invalid token fails.
-     *
-     * @return void
      */
     public function test_refresh_fails_with_invalid_token(): void
     {
@@ -89,8 +82,6 @@ class TokenRefreshTest extends TestCase
 
     /**
      * Test token refresh without authorization header fails.
-     *
-     * @return void
      */
     public function test_refresh_requires_authorization_header(): void
     {
@@ -107,8 +98,6 @@ class TokenRefreshTest extends TestCase
 
     /**
      * Test access token cannot be used for refresh.
-     *
-     * @return void
      */
     public function test_access_token_cannot_be_used_for_refresh(): void
     {
@@ -121,7 +110,7 @@ class TokenRefreshTest extends TestCase
         $accessToken = JWTAuth::fromUser($user);
 
         $response = $this->postJson('/api/auth/refresh', [], [
-            'Authorization' => 'Bearer ' . $accessToken,
+            'Authorization' => 'Bearer '.$accessToken,
         ]);
 
         $response->assertStatus(401)
@@ -135,8 +124,6 @@ class TokenRefreshTest extends TestCase
 
     /**
      * Test old refresh token is invalidated after refresh.
-     *
-     * @return void
      */
     public function test_old_refresh_token_is_invalidated_after_refresh(): void
     {
@@ -156,12 +143,12 @@ class TokenRefreshTest extends TestCase
 
         // Refresh the token
         $this->postJson('/api/auth/refresh', [], [
-            'Authorization' => 'Bearer ' . $oldRefreshToken,
+            'Authorization' => 'Bearer '.$oldRefreshToken,
         ]);
 
         // Try to use old refresh token again
         $response = $this->postJson('/api/auth/refresh', [], [
-            'Authorization' => 'Bearer ' . $oldRefreshToken,
+            'Authorization' => 'Bearer '.$oldRefreshToken,
         ]);
 
         $response->assertStatus(401)

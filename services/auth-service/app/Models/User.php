@@ -16,7 +16,6 @@ use Tymon\JWTAuth\Contracts\JWTSubject;
  * Represents a system user with authentication and role-based access control.
  * Implements JWTSubject for JSON Web Token authentication.
  *
- * @package App\Models
  * @property string $id
  * @property string $email
  * @property string $password
@@ -29,7 +28,7 @@ use Tymon\JWTAuth\Contracts\JWTSubject;
 class User extends Authenticatable implements JWTSubject
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasUuid, HasRoles;
+    use HasFactory, HasRoles, HasUuid, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -68,8 +67,6 @@ class User extends Authenticatable implements JWTSubject
 
     /**
      * Get the identifier that will be stored in the JWT subject claim.
-     *
-     * @return string
      */
     public function getJWTIdentifier(): string
     {
@@ -101,8 +98,6 @@ class User extends Authenticatable implements JWTSubject
 
     /**
      * Check if the user has the super_admin role.
-     *
-     * @return bool
      */
     public function isSuperAdmin(): bool
     {
@@ -111,8 +106,6 @@ class User extends Authenticatable implements JWTSubject
 
     /**
      * Check if the user has the regular role.
-     *
-     * @return bool
      */
     public function isRegular(): bool
     {

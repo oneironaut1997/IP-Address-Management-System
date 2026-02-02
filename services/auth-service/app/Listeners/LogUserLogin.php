@@ -11,8 +11,6 @@ use Illuminate\Queue\InteractsWithQueue;
  * Class LogUserLogin
  *
  * Listener for UserLoggedIn event that creates an audit log entry.
- *
- * @package App\Listeners
  */
 class LogUserLogin implements ShouldQueue
 {
@@ -22,9 +20,6 @@ class LogUserLogin implements ShouldQueue
      * Handle the event.
      *
      * Creates an immutable audit log entry for the login event.
-     *
-     * @param UserLoggedIn $event
-     * @return void
      */
     public function handle(UserLoggedIn $event): void
     {

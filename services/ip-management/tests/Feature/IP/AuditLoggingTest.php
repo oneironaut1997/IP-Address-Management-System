@@ -10,8 +10,6 @@ use Tests\TestCase;
  * Class AuditLoggingTest
  *
  * Feature tests for IP address audit logging.
- *
- * @package Tests\Feature\IP
  */
 class AuditLoggingTest extends TestCase
 {
@@ -19,8 +17,6 @@ class AuditLoggingTest extends TestCase
 
     /**
      * Test create operation logs activity.
-     *
-     * @return void
      */
     public function test_create_logs_activity(): void
     {
@@ -56,8 +52,6 @@ class AuditLoggingTest extends TestCase
 
     /**
      * Test update operation logs activity with changes.
-     *
-     * @return void
      */
     public function test_update_logs_activity_with_changes(): void
     {
@@ -97,8 +91,6 @@ class AuditLoggingTest extends TestCase
 
     /**
      * Test delete operation logs activity.
-     *
-     * @return void
      */
     public function test_delete_logs_activity(): void
     {
@@ -135,8 +127,6 @@ class AuditLoggingTest extends TestCase
 
     /**
      * Test history is tracked correctly.
-     *
-     * @return void
      */
     public function test_history_is_tracked(): void
     {
@@ -184,8 +174,6 @@ class AuditLoggingTest extends TestCase
 
     /**
      * Test activity log includes user context.
-     *
-     * @return void
      */
     public function test_activity_log_includes_user_context(): void
     {
@@ -211,8 +199,6 @@ class AuditLoggingTest extends TestCase
 
     /**
      * Test activity log properties contain relevant data.
-     *
-     * @return void
      */
     public function test_activity_log_properties_contain_data(): void
     {

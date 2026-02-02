@@ -10,8 +10,6 @@ use Tests\TestCase;
  * Class AuthorizationTest
  *
  * Feature tests for IP address authorization policies.
- *
- * @package Tests\Feature\IP
  */
 class AuthorizationTest extends TestCase
 {
@@ -19,8 +17,6 @@ class AuthorizationTest extends TestCase
 
     /**
      * Test all authenticated users can view all IPs.
-     *
-     * @return void
      */
     public function test_all_auth_users_can_view_ips(): void
     {
@@ -52,8 +48,6 @@ class AuthorizationTest extends TestCase
 
     /**
      * Test all authenticated users can create IPs.
-     *
-     * @return void
      */
     public function test_all_auth_users_can_create_ips(): void
     {
@@ -85,8 +79,6 @@ class AuthorizationTest extends TestCase
 
     /**
      * Test policy enforcement for update operations.
-     *
-     * @return void
      */
     public function test_policy_enforcement_for_update(): void
     {
@@ -134,8 +126,6 @@ class AuthorizationTest extends TestCase
 
     /**
      * Test policy enforcement for delete operations.
-     *
-     * @return void
      */
     public function test_policy_enforcement_for_delete(): void
     {
@@ -174,8 +164,6 @@ class AuthorizationTest extends TestCase
 
     /**
      * Test all authenticated users can view IP history.
-     *
-     * @return void
      */
     public function test_all_auth_users_can_view_history(): void
     {

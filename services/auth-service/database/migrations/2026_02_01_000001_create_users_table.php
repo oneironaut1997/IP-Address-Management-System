@@ -10,8 +10,6 @@ return new class extends Migration
      * Run the migrations.
      *
      * Creates the users table with UUID primary keys and role-based access control.
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -27,8 +25,6 @@ return new class extends Migration
 
     /**
      * Reverse the migrations.
-     *
-     * @return void
      */
     public function down(): void
     {

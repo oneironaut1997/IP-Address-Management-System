@@ -12,8 +12,6 @@ use Tymon\JWTAuth\Facades\JWTAuth;
  * Class LogoutTest
  *
  * Feature tests for user logout endpoint.
- *
- * @package Tests\Feature\Auth
  */
 class LogoutTest extends TestCase
 {
@@ -21,8 +19,6 @@ class LogoutTest extends TestCase
 
     /**
      * Test successful logout invalidates token.
-     *
-     * @return void
      */
     public function test_user_can_logout_and_token_is_invalidated(): void
     {
@@ -35,7 +31,7 @@ class LogoutTest extends TestCase
         $token = JWTAuth::fromUser($user);
 
         $response = $this->postJson('/api/auth/logout', [], [
-            'Authorization' => 'Bearer ' . $token,
+            'Authorization' => 'Bearer '.$token,
         ]);
 
         $response->assertStatus(200)
@@ -47,8 +43,6 @@ class LogoutTest extends TestCase
 
     /**
      * Test logout without token fails.
-     *
-     * @return void
      */
     public function test_logout_without_token_fails(): void
     {
@@ -59,8 +53,6 @@ class LogoutTest extends TestCase
 
     /**
      * Test logout with invalid token fails.
-     *
-     * @return void
      */
     public function test_logout_with_invalid_token_fails(): void
     {
@@ -73,8 +65,6 @@ class LogoutTest extends TestCase
 
     /**
      * Test accessing protected route after logout fails.
-     *
-     * @return void
      */
     // public function test_accessing_protected_route_after_logout_fails(): void
     // {
@@ -101,8 +91,6 @@ class LogoutTest extends TestCase
 
     /**
      * Test me endpoint returns authenticated user data.
-     *
-     * @return void
      */
     public function test_me_endpoint_returns_authenticated_user(): void
     {
@@ -115,7 +103,7 @@ class LogoutTest extends TestCase
         $token = JWTAuth::fromUser($user);
 
         $response = $this->getJson('/api/auth/me', [
-            'Authorization' => 'Bearer ' . $token,
+            'Authorization' => 'Bearer '.$token,
         ]);
 
         $response->assertStatus(200)
@@ -133,8 +121,6 @@ class LogoutTest extends TestCase
 
     /**
      * Test me endpoint requires authentication.
-     *
-     * @return void
      */
     public function test_me_endpoint_requires_authentication(): void
     {

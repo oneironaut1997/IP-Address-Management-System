@@ -22,24 +22,18 @@ use Tymon\JWTAuth\Facades\JWTAuth;
  *
  * Implements JWT-based authentication with refresh token rotation
  * and Redis-based session storage for enhanced security.
- *
- * @package App\Http\Controllers
  */
 class AuthController extends Controller
 {
     /**
      * Token time-to-live in minutes.
      * Access tokens expire after 1 hour.
-     *
-     * @var int
      */
     protected int $accessTokenTtl = 60;
 
     /**
      * Refresh token time-to-live in minutes.
      * Refresh tokens expire after 7 days.
-     *
-     * @var int
      */
     protected int $refreshTokenTtl = 10080;
 
@@ -48,9 +42,6 @@ class AuthController extends Controller
      *
      * Creates a new user account with the provided email and password.
      * Returns a success response upon completion.
-     *
-     * @param RegisterRequest $request
-     * @return JsonResponse
      */
     public function register(RegisterRequest $request): JsonResponse
     {
@@ -79,15 +70,12 @@ class AuthController extends Controller
      * Validates credentials and generates both access and refresh tokens.
      * Stores the refresh token in Redis with 7-day TTL for validation.
      * Creates a user session record for audit purposes.
-     *
-     * @param LoginRequest $request
-     * @return JsonResponse
      */
     public function login(LoginRequest $request): JsonResponse
     {
         $credentials = $request->only('email', 'password');
 
-        if (!$token = JWTAuth::attempt($credentials)) {
+        if (! $token = JWTAuth::attempt($credentials)) {
             return response()->json([
                 'success' => false,
                 'error' => [
@@ -148,9 +136,6 @@ class AuthController extends Controller
      *
      * Invalidates the current access token and removes the associated
      * refresh token from Redis. Fires logout event for audit logging.
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function logout(Request $request): JsonResponse
     {
@@ -195,9 +180,6 @@ class AuthController extends Controller
      * Validates the refresh token against Redis storage, generates new
      * token pair, invalidates the old refresh token, and stores the new
      * one in Redis. Implements token rotation for enhanced security.
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function refresh(Request $request): JsonResponse
     {
@@ -205,7 +187,7 @@ class AuthController extends Controller
             // Get refresh token from Authorization header
             $refreshToken = $this->getTokenFromRequest($request);
 
-            if (!$refreshToken) {
+            if (! $refreshToken) {
                 return response()->json([
                     'success' => false,
                     'error' => [
@@ -235,7 +217,7 @@ class AuthController extends Controller
             // Validate against Redis
             $userId = Redis::get("refresh:{$refreshJti}");
 
-            if (!$userId) {
+            if (! $userId) {
                 return response()->json([
                     'success' => false,
                     'error' => [
@@ -248,8 +230,9 @@ class AuthController extends Controller
             // Get user and verify existence
             $user = User::find($userId);
 
-            if (!$user) {
+            if (! $user) {
                 Redis::del("refresh:{$refreshJti}");
+
                 return response()->json([
                     'success' => false,
                     'error' => [
@@ -310,8 +293,6 @@ class AuthController extends Controller
      * Get the authenticated user's profile.
      *
      * Returns the current user's information including id, email, and role.
-     *
-     * @return JsonResponse
      */
     public function me(): JsonResponse
     {
@@ -333,15 +314,12 @@ class AuthController extends Controller
 
     /**
      * Extract the bearer token from the request.
-     *
-     * @param Request $request
-     * @return string|null
      */
     protected function getTokenFromRequest(Request $request): ?string
     {
         $header = $request->header('Authorization');
 
-        if (!$header || !str_starts_with($header, 'Bearer ')) {
+        if (! $header || ! str_starts_with($header, 'Bearer ')) {
             return null;
         }
 

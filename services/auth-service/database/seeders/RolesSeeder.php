@@ -9,8 +9,6 @@ use Spatie\Permission\Models\Role;
  * Class RolesSeeder
  *
  * Seeds the initial roles for the application.
- *
- * @package Database\Seeders
  */
 class RolesSeeder extends Seeder
 {
@@ -20,8 +18,6 @@ class RolesSeeder extends Seeder
      * Creates the default roles:
      * - regular: Standard user with limited permissions
      * - super_admin: Full system access
-     *
-     * @return void
      */
     public function run(): void
     {

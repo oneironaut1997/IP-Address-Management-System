@@ -11,8 +11,6 @@ use Tests\TestCase;
  * Class RegisterTest
  *
  * Feature tests for user registration endpoint.
- *
- * @package Tests\Feature\Auth
  */
 class RegisterTest extends TestCase
 {
@@ -20,8 +18,6 @@ class RegisterTest extends TestCase
 
     /**
      * Test successful user registration.
-     *
-     * @return void
      */
     public function test_user_can_register_with_valid_credentials(): void
     {
@@ -54,8 +50,6 @@ class RegisterTest extends TestCase
 
     /**
      * Test registration with duplicate email fails.
-     *
-     * @return void
      */
     public function test_registration_fails_with_duplicate_email(): void
     {
@@ -77,8 +71,6 @@ class RegisterTest extends TestCase
 
     /**
      * Test registration with invalid email format fails.
-     *
-     * @return void
      */
     public function test_registration_fails_with_invalid_email(): void
     {
@@ -94,8 +86,6 @@ class RegisterTest extends TestCase
 
     /**
      * Test registration with weak password fails.
-     *
-     * @return void
      */
     public function test_registration_fails_with_weak_password(): void
     {
@@ -111,8 +101,6 @@ class RegisterTest extends TestCase
 
     /**
      * Test registration with mismatched password confirmation fails.
-     *
-     * @return void
      */
     public function test_registration_fails_with_password_mismatch(): void
     {
@@ -128,8 +116,6 @@ class RegisterTest extends TestCase
 
     /**
      * Test registration assigns regular role by default.
-     *
-     * @return void
      */
     public function test_registration_assigns_regular_role_by_default(): void
     {

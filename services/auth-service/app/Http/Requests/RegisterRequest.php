@@ -9,15 +9,11 @@ use Illuminate\Validation\Rules\Password;
  * Class RegisterRequest
  *
  * Validation rules for user registration requests.
- *
- * @package App\Http\Requests
  */
 class RegisterRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
-     *
-     * @return bool
      */
     public function authorize(): bool
     {

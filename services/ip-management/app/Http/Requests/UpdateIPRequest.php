@@ -8,8 +8,6 @@ use Illuminate\Foundation\Http\FormRequest;
  * Class UpdateIPRequest
  *
  * Validates IP address update requests.
- *
- * @package App\Http\Requests
  */
 class UpdateIPRequest extends FormRequest
 {
@@ -17,8 +15,6 @@ class UpdateIPRequest extends FormRequest
      * Determine if the user is authorized to make this request.
      *
      * Authorization is handled by the controller using policies.
-     *
-     * @return bool
      */
     public function authorize(): bool
     {

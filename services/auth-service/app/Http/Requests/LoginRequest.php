@@ -8,15 +8,11 @@ use Illuminate\Foundation\Http\FormRequest;
  * Class LoginRequest
  *
  * Validation rules for user login requests.
- *
- * @package App\Http\Requests
  */
 class LoginRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
-     *
-     * @return bool
      */
     public function authorize(): bool
     {

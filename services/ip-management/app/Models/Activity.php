@@ -9,8 +9,6 @@ use Spatie\Activitylog\Models\Activity as SpatieActivity;
  * Class Activity
  *
  * Custom Activity model for Spatie Activity Log with UUID support.
- *
- * @package App\Models
  */
 class Activity extends SpatieActivity
 {

@@ -10,8 +10,6 @@ use Illuminate\Support\Facades\Route;
  * This file defines the API routes for the gateway service.
  * Public routes (no authentication) are defined first,
  * followed by protected routes that require JWT validation.
- *
- * @package Gateway
  */
 
 /*

@@ -14,7 +14,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * Represents an IP address (IPv4 or IPv6) in the system.
  * Uses UUID primary keys and soft deletes for data recovery.
  *
- * @package App\Models
  *
  * @property string $id
  * @property string $user_id
@@ -66,8 +65,6 @@ class IPAddress extends Model
 
     /**
      * Get the history records for this IP address.
-     *
-     * @return HasMany
      */
     public function history(): HasMany
     {

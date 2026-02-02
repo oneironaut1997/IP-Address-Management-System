@@ -13,7 +13,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * Represents an active user authentication session.
  * Tracks JWT token metadata for session management and audit purposes.
  *
- * @package App\Models
  * @property string $id
  * @property string $user_id
  * @property string $token_jti
@@ -66,8 +65,6 @@ class UserSession extends Model
 
     /**
      * Check if the session has expired.
-     *
-     * @return bool
      */
     public function hasExpired(): bool
     {
@@ -76,8 +73,6 @@ class UserSession extends Model
 
     /**
      * Update the last activity timestamp.
-     *
-     * @return void
      */
     public function touchLastActivity(): void
     {

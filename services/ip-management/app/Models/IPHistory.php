@@ -13,7 +13,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * Tracks changes to IP addresses over time.
  * Stores old and new values as JSON for complete audit trail.
  *
- * @package App\Models
  *
  * @property string $id
  * @property string $ip_address_id
@@ -69,8 +68,6 @@ class IPHistory extends Model
 
     /**
      * Get the IP address that this history record belongs to.
-     *
-     * @return BelongsTo
      */
     public function ipAddress(): BelongsTo
     {

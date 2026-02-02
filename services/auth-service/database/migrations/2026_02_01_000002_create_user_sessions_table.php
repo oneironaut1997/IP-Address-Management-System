@@ -11,8 +11,6 @@ return new class extends Migration
      *
      * Creates the user_sessions table for tracking active authentication sessions.
      * Stores JWT token metadata, IP addresses, and user agents for audit purposes.
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -39,8 +37,6 @@ return new class extends Migration
 
     /**
      * Reverse the migrations.
-     *
-     * @return void
      */
     public function down(): void
     {

@@ -4,15 +4,12 @@ namespace App\Providers;
 
 use App\Models\IPAddress;
 use App\Policies\IPAddressPolicy;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 
 /**
  * Class AuthServiceProvider
  *
  * Service provider for authorization policies and gates.
- *
- * @package App\Providers
  */
 class AuthServiceProvider extends ServiceProvider
 {
@@ -27,8 +24,6 @@ class AuthServiceProvider extends ServiceProvider
 
     /**
      * Register any authentication / authorization services.
-     *
-     * @return void
      */
     public function boot(): void
     {

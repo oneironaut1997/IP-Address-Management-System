@@ -10,8 +10,6 @@ return new class extends Migration
      * Run the migrations.
      *
      * Creates Spatie Laravel Permission tables for role-based access control.
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -120,8 +118,6 @@ return new class extends Migration
 
     /**
      * Reverse the migrations.
-     *
-     * @return void
      */
     public function down(): void
     {

@@ -13,7 +13,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * Immutable audit trail for user authentication events.
  * Tracks login/logout activities for compliance and security analysis.
  *
- * @package App\Models
  * @property string $id
  * @property string|null $user_id
  * @property string $event_type
@@ -84,8 +83,6 @@ class AuditLog extends Model
      * Boot the model.
      *
      * Ensures audit logs are immutable by preventing updates.
-     *
-     * @return void
      */
     protected static function boot(): void
     {
