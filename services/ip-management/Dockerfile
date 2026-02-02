@@ -28,9 +28,15 @@ RUN apk add --no-cache \
     unzip \
     # MySQL client for database connectivity testing
     mariadb-client \
+    # SQLite for testing
+    sqlite-dev \
+    # GMP for php-ip library
+    gmp-dev \
     # Install PHP extensions
     && docker-php-ext-install \
         pdo_mysql \
+        pdo_sqlite \
+        gmp \
         mbstring \
         exif \
         pcntl \

@@ -107,7 +107,7 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       await api.post('/auth/logout')
     } catch (err) {
-      // Ignore errors during logout
+      console.error(err);
     } finally {
       clearAuthState()
     }

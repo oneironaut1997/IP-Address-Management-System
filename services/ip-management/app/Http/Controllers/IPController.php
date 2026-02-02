@@ -9,7 +9,7 @@ use App\Models\IPHistory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Rlanvin\Phpip\Ip;
+use PhpIP\IP;
 
 /**
  * Class IPController
@@ -56,7 +56,7 @@ class IPController extends Controller
 
         // Validate and detect IP type using php-ip library
         try {
-            $ip = Ip::create($validated['ip_address']);
+            $ip = IP::create($validated['ip_address']);
             $type = $ip->getVersion() === 4 ? 'ipv4' : 'ipv6';
         } catch (\InvalidArgumentException $e) {
             return response()->json([
@@ -90,9 +90,13 @@ class IPController extends Controller
 
         // Log activity using Spatie Activity Log
         activity()
-            ->causedBy($userId)
             ->performedOn($ipAddress)
-            ->withProperties(['ip' => $ipAddress->toArray()])
+            ->event('ip.created')
+            ->withProperties(['ip' => $ipAddress->toArray(), 'causer_id' => $userId])
+            ->tap(function ($activity) use ($userId) {
+                $activity->causer_id = $userId;
+                $activity->causer_type = null;
+            })
             ->log('ip.created');
 
         return response()->json([
@@ -182,12 +186,17 @@ class IPController extends Controller
 
         // Log activity using Spatie Activity Log
         activity()
-            ->causedBy($userId)
             ->performedOn($ipAddress)
+            ->event('ip.updated')
             ->withProperties([
                 'old' => $oldValues,
                 'new' => $ipAddress->fresh()->toArray(),
+                'causer_id' => $userId,
             ])
+            ->tap(function ($activity) use ($userId) {
+                $activity->causer_id = $userId;
+                $activity->causer_type = null;
+            })
             ->log('ip.updated');
 
         return response()->json([
@@ -251,9 +260,13 @@ class IPController extends Controller
 
         // Log activity using Spatie Activity Log
         activity()
-            ->causedBy($userId)
             ->performedOn($ipAddress)
-            ->withProperties(['ip' => $oldValues])
+            ->event('ip.deleted')
+            ->withProperties(['ip' => $oldValues, 'causer_id' => $userId])
+            ->tap(function ($activity) use ($userId) {
+                $activity->causer_id = $userId;
+                $activity->causer_type = null;
+            })
             ->log('ip.deleted');
 
         return response()->json([
