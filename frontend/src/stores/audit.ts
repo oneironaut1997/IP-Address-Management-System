@@ -10,7 +10,7 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import api from '@/api/client'
-import type { AuditLog } from '@/types'
+import type { AuditLog, APIResponse } from '@/types'
 
 /**
  * Audit Store
@@ -53,8 +53,8 @@ export const useAuditStore = defineStore('audit', () => {
     error.value = null
 
     try {
-      const { data } = await api.get<AuditLog[]>('/audit/logs')
-      logs.value = data
+      const { data } = await api.get<APIResponse<AuditLog[]>>('/audit/logs')
+      logs.value = data.data ?? [];
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to fetch audit logs'
       error.value = message

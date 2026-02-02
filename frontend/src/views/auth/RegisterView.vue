@@ -1,89 +1,3 @@
-<template>
-  <div class="register-view">
-    <h2 class="form-title">Create Account</h2>
-
-    <form @submit.prevent="handleSubmit" class="form">
-      <!-- Email Field -->
-      <div class="form-group">
-        <label for="email" class="form-label">Email Address</label>
-        <input
-          id="email"
-          v-model="form.email"
-          type="email"
-          class="form-input"
-          :class="{ 'form-input--error': errors.email }"
-          placeholder="Enter your email"
-          required
-          autocomplete="email"
-        />
-        <span v-if="errors.email" class="form-error">{{ errors.email }}</span>
-      </div>
-
-      <!-- Password Field -->
-      <div class="form-group">
-        <label for="password" class="form-label">Password</label>
-        <input
-          id="password"
-          v-model="form.password"
-          type="password"
-          class="form-input"
-          :class="{ 'form-input--error': errors.password }"
-          placeholder="Create a password (min 8 characters)"
-          required
-          autocomplete="new-password"
-        />
-        <span v-if="errors.password" class="form-error">{{ errors.password }}</span>
-      </div>
-
-      <!-- Confirm Password Field -->
-      <div class="form-group">
-        <label for="password_confirmation" class="form-label">Confirm Password</label>
-        <input
-          id="password_confirmation"
-          v-model="form.password_confirmation"
-          type="password"
-          class="form-input"
-          :class="{ 'form-input--error': errors.password_confirmation }"
-          placeholder="Confirm your password"
-          required
-          autocomplete="new-password"
-        />
-        <span v-if="errors.password_confirmation" class="form-error">
-          {{ errors.password_confirmation }}
-        </span>
-      </div>
-
-      <!-- Error Message -->
-      <div v-if="authStore.error" class="alert alert--error">
-        {{ authStore.error }}
-      </div>
-
-      <!-- Success Message -->
-      <div v-if="successMessage" class="alert alert--success">
-        {{ successMessage }}
-      </div>
-
-      <!-- Submit Button -->
-      <button
-        type="submit"
-        class="btn btn--primary btn--full"
-        :disabled="authStore.loading"
-      >
-        <span v-if="authStore.loading">Creating account...</span>
-        <span v-else>Create Account</span>
-      </button>
-    </form>
-
-    <!-- Login Link -->
-    <div class="form-footer">
-      <p>
-        Already have an account?
-        <router-link to="/login" class="form-link">Sign in</router-link>
-      </p>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 /**
  * Register View
@@ -98,6 +12,8 @@ import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import type { RegistrationData } from '@/types'
+import { Mail, Lock, Loader2, ArrowRight, CheckCircle } from 'lucide-vue-next'
+import { cn } from '@/lib/utils'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -184,125 +100,118 @@ async function handleSubmit(): Promise<void> {
 }
 </script>
 
-<style scoped>
-.register-view {
-  width: 100%;
-}
+<template>
+  <div class="space-y-6">
+    <div class="text-center">
+      <h2 class="text-xl font-semibold">Create Account</h2>
+      <p class="text-sm text-muted-foreground mt-1">Get started with your free account</p>
+    </div>
 
-.form-title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #1a202c;
-  margin: 0 0 1.5rem 0;
-  text-align: center;
-}
+    <form @submit.prevent="handleSubmit" class="space-y-4">
+      <!-- Email Field -->
+      <div class="space-y-2">
+        <label for="email" class="text-sm font-medium">Email Address</label>
+        <div class="relative">
+          <Mail class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            id="email"
+            v-model="form.email"
+            type="email"
+            :class="cn(
+              'flex w-full rounded-lg border bg-background px-3 py-2.5 pl-10 text-sm ring-offset-background transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+              errors.email ? 'border-destructive focus-visible:ring-destructive' : 'border-input'
+            )"
+            placeholder="name@company.com"
+            required
+            autocomplete="email"
+          />
+        </div>
+        <p v-if="errors.email" class="text-xs text-destructive">{{ errors.email }}</p>
+      </div>
 
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
+      <!-- Password Field -->
+      <div class="space-y-2">
+        <label for="password" class="text-sm font-medium">Password</label>
+        <div class="relative">
+          <Lock class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            id="password"
+            v-model="form.password"
+            type="password"
+            :class="cn(
+              'flex w-full rounded-lg border bg-background px-3 py-2.5 pl-10 text-sm ring-offset-background transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+              errors.password ? 'border-destructive focus-visible:ring-destructive' : 'border-input'
+            )"
+            placeholder="Create a password (min 8 characters)"
+            required
+            autocomplete="new-password"
+          />
+        </div>
+        <p v-if="errors.password" class="text-xs text-destructive">{{ errors.password }}</p>
+      </div>
 
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.375rem;
-}
+      <!-- Confirm Password Field -->
+      <div class="space-y-2">
+        <label for="password_confirmation" class="text-sm font-medium">Confirm Password</label>
+        <div class="relative">
+          <Lock class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            id="password_confirmation"
+            v-model="form.password_confirmation"
+            type="password"
+            :class="cn(
+              'flex w-full rounded-lg border bg-background px-3 py-2.5 pl-10 text-sm ring-offset-background transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+              errors.password_confirmation ? 'border-destructive focus-visible:ring-destructive' : 'border-input'
+            )"
+            placeholder="Confirm your password"
+            required
+            autocomplete="new-password"
+          />
+        </div>
+        <p v-if="errors.password_confirmation" class="text-xs text-destructive">{{ errors.password_confirmation }}</p>
+      </div>
 
-.form-label {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #4a5568;
-}
+      <!-- Error Message -->
+      <div
+        v-if="authStore.error"
+        class="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm"
+      >
+        {{ authStore.error }}
+      </div>
 
-.form-input {
-  padding: 0.625rem 0.875rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
+      <!-- Success Message -->
+      <div
+        v-if="successMessage"
+        class="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-sm flex items-center gap-2"
+      >
+        <CheckCircle class="w-4 h-4" />
+        {{ successMessage }}
+      </div>
 
-.form-input:focus {
-  outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
+      <!-- Submit Button -->
+      <button
+        type="submit"
+        :disabled="authStore.loading || !!successMessage"
+        class="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground ring-offset-background transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+      >
+        <Loader2 v-if="authStore.loading" class="w-4 h-4 animate-spin" />
+        <span v-if="authStore.loading">Creating account...</span>
+        <template v-else>
+          <span>Create Account</span>
+          <ArrowRight class="w-4 h-4" />
+        </template>
+      </button>
+    </form>
 
-.form-input--error {
-  border-color: #f56565;
-}
-
-.form-input--error:focus {
-  border-color: #f56565;
-  box-shadow: 0 0 0 3px rgba(245, 101, 101, 0.1);
-}
-
-.form-error {
-  font-size: 0.75rem;
-  color: #f56565;
-}
-
-.alert {
-  padding: 0.75rem 1rem;
-  border-radius: 6px;
-  font-size: 0.875rem;
-}
-
-.alert--error {
-  background-color: #fff5f5;
-  color: #c53030;
-  border: 1px solid #feb2b2;
-}
-
-.alert--success {
-  background-color: #f0fff4;
-  color: #276749;
-  border: 1px solid #9ae6b4;
-}
-
-.btn {
-  padding: 0.625rem 1rem;
-  border: none;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.15s, opacity 0.15s;
-}
-
-.btn--primary {
-  background-color: #667eea;
-  color: white;
-}
-
-.btn--primary:hover:not(:disabled) {
-  background-color: #5a67d8;
-}
-
-.btn--full {
-  width: 100%;
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.form-footer {
-  margin-top: 1.5rem;
-  text-align: center;
-  font-size: 0.875rem;
-  color: #718096;
-}
-
-.form-link {
-  color: #667eea;
-  text-decoration: none;
-  font-weight: 500;
-}
-
-.form-link:hover {
-  text-decoration: underline;
-}
-</style>
+    <!-- Login Link -->
+    <div class="text-center text-sm">
+      <span class="text-muted-foreground">Already have an account?</span>
+      <router-link
+        to="/login"
+        class="ml-1 font-medium text-primary hover:text-primary/90 underline-offset-4 hover:underline"
+      >
+        Sign in
+      </router-link>
+    </div>
+  </div>
+</template>

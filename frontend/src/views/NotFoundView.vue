@@ -1,11 +1,3 @@
-<template>
-  <div class="not-found-view">
-    <h1>404</h1>
-    <p>Page not found</p>
-    <router-link to="/">Go Home</router-link>
-  </div>
-</template>
-
 <script setup lang="ts">
 /**
  * Not Found View
@@ -14,37 +6,35 @@
  *
  * @package Views
  */
+
+import { Home, AlertCircle } from 'lucide-vue-next'
 </script>
 
-<style scoped>
-.not-found-view {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  text-align: center;
-}
+<template>
+  <div class="min-h-screen flex items-center justify-center p-4">
+    <div class="text-center space-y-6 max-w-md">
+      <!-- Icon -->
+      <div class="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+        <AlertCircle class="w-12 h-12 text-primary" />
+      </div>
 
-h1 {
-  font-size: 6rem;
-  margin: 0;
-  color: #667eea;
-}
+      <!-- Content -->
+      <div class="space-y-2">
+        <h1 class="text-6xl font-bold text-primary">404</h1>
+        <h2 class="text-2xl font-semibold">Page Not Found</h2>
+        <p class="text-muted-foreground">
+          The page you're looking for doesn't exist or has been moved.
+        </p>
+      </div>
 
-p {
-  font-size: 1.5rem;
-  color: #4a5568;
-  margin: 1rem 0;
-}
-
-a {
-  color: #667eea;
-  text-decoration: none;
-  font-weight: 500;
-}
-
-a:hover {
-  text-decoration: underline;
-}
-</style>
+      <!-- Action -->
+      <router-link
+        to="/"
+        class="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+      >
+        <Home class="w-4 h-4" />
+        Go Home
+      </router-link>
+    </div>
+  </div>
+</template>

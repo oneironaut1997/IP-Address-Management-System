@@ -15,14 +15,12 @@ onMounted(() => {
 </template>
 
 <style>
-/* Global styles */
-* {
-  box-sizing: border-box;
+/* Global styles - Tailwind handles most styling */
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-  background-color: #f7fafc;
+  font-feature-settings: 'rlig' 1, 'calt' 1;
 }
 </style>

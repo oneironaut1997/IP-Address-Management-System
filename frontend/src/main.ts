@@ -14,7 +14,8 @@ import Toast, { type PluginOptions, POSITION } from 'vue-toastification'
 import App from './App.vue'
 import router from './router'
 
-// Import toast CSS
+// Import styles
+import './assets/index.css'
 import 'vue-toastification/dist/index.css'
 
 /**

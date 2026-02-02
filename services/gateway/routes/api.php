@@ -42,6 +42,9 @@ Route::middleware('jwt')->group(function () {
     Route::post('auth/logout', [AuthProxyController::class, 'logout']);
     Route::get('auth/me', [AuthProxyController::class, 'me']);
 
+    // Audit log routes
+    Route::get('audit/logs', [AuthProxyController::class, 'auditLogs']);
+
     // IP Management Service Routes
     // Wildcard route proxies all IP-related requests to the IP service
     Route::any('ip/{path?}', [IPProxyController::class, 'handle'])

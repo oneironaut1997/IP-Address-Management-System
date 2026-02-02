@@ -1,3 +1,4 @@
+<script setup lang="ts">
 /**
  * Audit Dashboard View
  *
@@ -7,184 +8,33 @@
  * @package Views/Audit
  */
 
-<template>
-  <div class="audit-dashboard-view">
-    <!-- Header -->
-    <div class="view-header">
-      <div class="header-content">
-        <h1 class="page-title">Audit Dashboard</h1>
-        <p class="page-subtitle">View system audit logs and user activity</p>
-      </div>
-      <span v-if="authStore.isSuperAdmin" class="admin-badge">Super Admin</span>
-    </div>
-
-    <!-- Access Denied -->
-    <div v-if="!authStore.isSuperAdmin" class="access-denied">
-      <div class="access-icon">🚫</div>
-      <h2>Access Denied</h2>
-      <p>This page is only accessible to super administrators.</p>
-      <router-link to="/dashboard" class="btn btn--primary">Back to Dashboard</router-link>
-    </div>
-
-    <!-- Audit Logs -->
-    <template v-else>
-      <!-- Filters -->
-      <div class="filters">
-        <div class="filter-group">
-          <label class="filter-label">Filter by Event Type</label>
-          <select v-model="selectedFilter" class="filter-select" @change="applyFilter">
-            <option value="">All Events</option>
-            <option v-for="type in auditStore.eventTypes" :key="type" :value="type">
-              {{ formatEventType(type) }}
-            </option>
-          </select>
-        </div>
-        <button v-if="selectedFilter" class="btn btn--secondary" @click="clearFilter">
-          Clear Filter
-        </button>
-        <button class="btn btn--primary" @click="refreshLogs" :disabled="auditStore.loading">
-          {{ auditStore.loading ? 'Refreshing...' : 'Refresh' }}
-        </button>
-      </div>
-
-      <!-- Loading State -->
-      <div v-if="auditStore.loading && !auditStore.logs.length" class="loading-state">
-        <div class="spinner"></div>
-        <p>Loading audit logs...</p>
-      </div>
-
-      <!-- Empty State -->
-      <div v-else-if="!auditStore.filteredLogs.length" class="empty-state">
-        <div class="empty-icon">📜</div>
-        <h3>No Audit Logs</h3>
-        <p>There are no audit logs to display.</p>
-      </div>
-
-      <!-- Audit Logs Table -->
-      <div v-else class="table-container">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Timestamp</th>
-              <th>User</th>
-              <th>Event</th>
-              <th>Entity</th>
-              <th>Details</th>
-              <th>Session</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="log in auditStore.filteredLogs" :key="log.id" class="table-row">
-              <td class="timestamp-cell">
-                {{ formatDate(log.created_at) }}
-              </td>
-              <td>
-                <span class="user-id" :title="log.user_id">{{ truncate(log.user_id, 8) }}</span>
-              </td>
-              <td>
-                <span class="event-badge" :class="getEventClass(log.event_type)">
-                  {{ formatEventType(log.event_type) }}
-                </span>
-              </td>
-              <td>
-                <span class="entity-type">{{ log.entity_type }}</span>
-                <span class="entity-id" :title="log.entity_id">
-                  {{ truncate(log.entity_id, 8) }}
-                </span>
-              </td>
-              <td>
-                <button
-                  class="details-btn"
-                  @click="showDetails(log)"
-                  title="View Details"
-                >
-                  View
-                </button>
-              </td>
-              <td>
-                <span class="session-id" :title="log.session_id">
-                  {{ truncate(log.session_id, 8) }}
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Stats Summary -->
-      <div v-if="auditStore.logs.length" class="stats-summary">
-        <p>Showing {{ auditStore.filteredLogs.length }} of {{ auditStore.logs.length }} audit log entries</p>
-      </div>
-    </template>
-
-    <!-- Details Modal -->
-    <div v-if="selectedLog" class="modal-overlay" @click.self="selectedLog = null">
-      <div class="modal">
-        <div class="modal-header">
-          <h3 class="modal-title">Audit Log Details</h3>
-          <button class="modal-close" @click="selectedLog = null">&times;</button>
-        </div>
-        <div class="modal-body">
-          <div class="detail-grid">
-            <div class="detail-item">
-              <span class="detail-label">Timestamp</span>
-              <span class="detail-value">{{ formatFullDate(selectedLog.created_at) }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">User ID</span>
-              <span class="detail-value">{{ selectedLog.user_id }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">Event Type</span>
-              <span class="detail-value">{{ selectedLog.event_type }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">Entity Type</span>
-              <span class="detail-value">{{ selectedLog.entity_type }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">Entity ID</span>
-              <span class="detail-value">{{ selectedLog.entity_id }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">Session ID</span>
-              <span class="detail-value">{{ selectedLog.session_id }}</span>
-            </div>
-          </div>
-          <div class="metadata-section">
-            <span class="detail-label">Metadata</span>
-            <pre class="metadata-json">{{ JSON.stringify(selectedLog.metadata, null, 2) }}</pre>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn--secondary" @click="selectedLog = null">Close</button>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
-
-<script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useAuditStore } from '@/stores/audit'
 import type { AuditLog } from '@/types'
+import {
+  Shield,
+  Loader2,
+  ScrollText,
+  Filter,
+  X,
+  RefreshCw,
+  Eye,
+  Ban,
+  Home,
+  Clock,
+  User,
+  FileText,
+  Code,
+} from 'lucide-vue-next'
+import { cn } from '@/lib/utils'
 
-/**
- * Stores
- */
 const authStore = useAuthStore()
 const auditStore = useAuditStore()
 
-/**
- * State
- */
 const selectedFilter = ref('')
 const selectedLog = ref<AuditLog | null>(null)
 
-/**
- * Format event type for display
- */
 function formatEventType(eventType: string): string {
   return eventType
     .split('.')
@@ -192,21 +42,15 @@ function formatEventType(eventType: string): string {
     .join(' ')
 }
 
-/**
- * Get event class for badge styling
- */
-function getEventClass(eventType: string): string {
-  if (eventType.includes('login')) return 'event--login'
-  if (eventType.includes('logout')) return 'event--logout'
-  if (eventType.includes('created')) return 'event--create'
-  if (eventType.includes('updated')) return 'event--update'
-  if (eventType.includes('deleted')) return 'event--delete'
-  return 'event--other'
+function getEventColor(eventType: string): string {
+  if (eventType.includes('login')) return 'bg-emerald-100 text-emerald-700'
+  if (eventType.includes('logout')) return 'bg-amber-100 text-amber-700'
+  if (eventType.includes('created')) return 'bg-blue-100 text-blue-700'
+  if (eventType.includes('updated')) return 'bg-purple-100 text-purple-700'
+  if (eventType.includes('deleted')) return 'bg-rose-100 text-rose-700'
+  return 'bg-gray-100 text-gray-700'
 }
 
-/**
- * Format date for display
- */
 function formatDate(dateString: string): string {
   return new Date(dateString).toLocaleString('en-US', {
     month: 'short',
@@ -216,9 +60,6 @@ function formatDate(dateString: string): string {
   })
 }
 
-/**
- * Format full date for details
- */
 function formatFullDate(dateString: string): string {
   return new Date(dateString).toLocaleString('en-US', {
     year: 'numeric',
@@ -230,46 +71,28 @@ function formatFullDate(dateString: string): string {
   })
 }
 
-/**
- * Truncate string with ellipsis
- */
 function truncate(str: string, length: number): string {
   if (str.length <= length) return str
   return str.substring(0, length) + '...'
 }
 
-/**
- * Apply filter
- */
 function applyFilter(): void {
   auditStore.setEventFilter(selectedFilter.value)
 }
 
-/**
- * Clear filter
- */
 function clearFilter(): void {
   selectedFilter.value = ''
   auditStore.clearFilter()
 }
 
-/**
- * Show log details
- */
 function showDetails(log: AuditLog): void {
   selectedLog.value = log
 }
 
-/**
- * Refresh logs
- */
 async function refreshLogs(): Promise<void> {
   await auditStore.fetchAllLogs()
 }
 
-/**
- * Fetch logs on mount
- */
 onMounted(() => {
   if (authStore.isSuperAdmin) {
     auditStore.fetchAllLogs()
@@ -277,456 +100,265 @@ onMounted(() => {
 })
 </script>
 
-<style scoped>
-.audit-dashboard-view {
-  padding: 2rem;
-  max-width: 1400px;
-  margin: 0 auto;
-}
-
-.view-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 1.5rem;
-}
-
-.page-title {
-  font-size: 1.75rem;
-  font-weight: 600;
-  color: #1a202c;
-  margin: 0 0 0.25rem 0;
-}
-
-.page-subtitle {
-  color: #718096;
-  margin: 0;
-}
-
-.admin-badge {
-  padding: 0.375rem 0.75rem;
-  background-color: #fed7e2;
-  color: #97266d;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.625rem 1rem;
-  border: none;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.15s, opacity 0.15s;
-}
-
-.btn--primary {
-  background-color: #667eea;
-  color: white;
-}
-
-.btn--primary:hover:not(:disabled) {
-  background-color: #5a67d8;
-}
-
-.btn--secondary {
-  background-color: #e2e8f0;
-  color: #4a5568;
-}
-
-.btn--secondary:hover:not(:disabled) {
-  background-color: #cbd5e0;
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* Access Denied */
-.access-denied {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 4rem 2rem;
-  text-align: center;
-}
-
-.access-icon {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-}
-
-.access-denied h2 {
-  margin: 0 0 0.5rem 0;
-  color: #1a202c;
-}
-
-.access-denied p {
-  color: #718096;
-  margin: 0 0 1.5rem 0;
-}
-
-/* Filters */
-.filters {
-  display: flex;
-  align-items: flex-end;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-  flex-wrap: wrap;
-}
-
-.filter-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.375rem;
-}
-
-.filter-label {
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: #4a5568;
-  text-transform: uppercase;
-}
-
-.filter-select {
-  padding: 0.625rem 2rem 0.625rem 0.875rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  background-color: white;
-  min-width: 200px;
-}
-
-.filter-select:focus {
-  outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
-
-/* Loading State */
-.loading-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 4rem 2rem;
-  color: #718096;
-}
-
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid #e2e8f0;
-  border-top-color: #667eea;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 1rem;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* Empty State */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 4rem 2rem;
-  text-align: center;
-}
-
-.empty-icon {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-}
-
-.empty-state h3 {
-  margin: 0 0 0.5rem 0;
-  color: #1a202c;
-}
-
-.empty-state p {
-  color: #718096;
-  margin: 0;
-}
-
-/* Table */
-.table-container {
-  background: white;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
-  overflow: hidden;
-  overflow-x: auto;
-}
-
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.875rem;
-}
-
-.data-table th,
-.data-table td {
-  padding: 0.875rem 1rem;
-  text-align: left;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.data-table th {
-  background-color: #f7fafc;
-  font-weight: 600;
-  color: #4a5568;
-  text-transform: uppercase;
-  font-size: 0.75rem;
-  letter-spacing: 0.05em;
-}
-
-.table-row:hover {
-  background-color: #f7fafc;
-}
-
-.timestamp-cell {
-  white-space: nowrap;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 0.8125rem;
-}
-
-.user-id,
-.entity-id,
-.session-id {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 0.8125rem;
-  color: #718096;
-}
-
-.entity-type {
-  display: block;
-  font-size: 0.75rem;
-  color: #4a5568;
-  font-weight: 500;
-}
-
-.event-badge {
-  display: inline-block;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-
-.event--login {
-  background-color: #c6f6d5;
-  color: #22543d;
-}
-
-.event--logout {
-  background-color: #feebc8;
-  color: #744210;
-}
-
-.event--create {
-  background-color: #bee3f8;
-  color: #2a4365;
-}
-
-.event--update {
-  background-color: #e9d8fd;
-  color: #553c9a;
-}
-
-.event--delete {
-  background-color: #fed7d7;
-  color: #742a2a;
-}
-
-.event--other {
-  background-color: #e2e8f0;
-  color: #4a5568;
-}
-
-.details-btn {
-  padding: 0.25rem 0.5rem;
-  background: none;
-  border: 1px solid #e2e8f0;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  color: #667eea;
-  cursor: pointer;
-  transition: background-color 0.15s;
-}
-
-.details-btn:hover {
-  background-color: #f7fafc;
-}
-
-/* Stats Summary */
-.stats-summary {
-  margin-top: 1rem;
-  padding: 0.75rem 1rem;
-  background-color: #f7fafc;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  color: #718096;
-}
-
-.stats-summary p {
-  margin: 0;
-}
-
-/* Modal */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 1rem;
-}
-
-.modal {
-  background: white;
-  border-radius: 8px;
-  width: 100%;
-  max-width: 600px;
-  max-height: 90vh;
-  overflow: hidden;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.modal-title {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #1a202c;
-  margin: 0;
-}
-
-.modal-close {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  color: #718096;
-  cursor: pointer;
-  padding: 0;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-}
-
-.modal-close:hover {
-  background-color: #f7fafc;
-  color: #1a202c;
-}
-
-.modal-body {
-  padding: 1.5rem;
-  overflow-y: auto;
-  max-height: 60vh;
-}
-
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  padding: 1rem 1.5rem;
-  border-top: 1px solid #e2e8f0;
-  background-color: #f7fafc;
-}
-
-.detail-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.detail-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.detail-label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #718096;
-  text-transform: uppercase;
-}
-
-.detail-value {
-  font-size: 0.875rem;
-  color: #2d3748;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  word-break: break-all;
-}
-
-.metadata-section {
-  border-top: 1px solid #e2e8f0;
-  padding-top: 1rem;
-}
-
-.metadata-json {
-  margin: 0.5rem 0 0 0;
-  padding: 0.75rem;
-  background-color: #f7fafc;
-  border-radius: 6px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 0.8125rem;
-  overflow-x: auto;
-  white-space: pre-wrap;
-  word-break: break-all;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .audit-dashboard-view {
-    padding: 1rem;
-  }
-
-  .view-header {
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  .filters {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .filter-select {
-    width: 100%;
-  }
-
-  .data-table th,
-  .data-table td {
-    padding: 0.625rem;
-  }
-
-  .detail-grid {
-    grid-template-columns: 1fr;
-  }
-}
-</style>
+<template>
+  <div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-3">
+          <h1 class="text-2xl font-bold tracking-tight">Audit Dashboard</h1>
+          <span
+            v-if="authStore.isSuperAdmin"
+            class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-700"
+          >
+            <Shield class="w-3 h-3" />
+            Super Admin
+          </span>
+        </div>
+        <p class="text-muted-foreground">View system audit logs and user activity</p>
+      </div>
+    </div>
+
+    <!-- Access Denied -->
+    <div
+      v-if="!authStore.isSuperAdmin"
+      class="flex flex-col items-center justify-center py-12 rounded-xl border bg-card"
+    >
+      <div class="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+        <Ban class="w-8 h-8 text-destructive" />
+      </div>
+      <h3 class="text-lg font-medium mb-1">Access Denied</h3>
+      <p class="text-muted-foreground text-sm mb-4">This page is only accessible to super administrators</p>
+      <router-link
+        to="/dashboard"
+        class="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+      >
+        <Home class="w-4 h-4" />
+        Back to Dashboard
+      </router-link>
+    </div>
+
+    <!-- Audit Content -->
+    <template v-else>
+      <!-- Filters -->
+      <div class="flex flex-wrap items-end gap-4 p-4 rounded-xl border bg-card">
+        <div class="flex-1 min-w-[200px]">
+          <label class="text-sm font-medium mb-2 block">Filter by Event Type</label>
+          <div class="relative">
+            <Filter class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <select
+              v-model="selectedFilter"
+              class="w-full rounded-lg border bg-background pl-9 pr-4 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              @change="applyFilter"
+            >
+              <option value="">All Events</option>
+              <option v-for="type in auditStore.eventTypes" :key="type" :value="type">
+                {{ formatEventType(type) }}
+              </option>
+            </select>
+          </div>
+        </div>
+        <button
+          v-if="selectedFilter"
+          class="inline-flex items-center justify-center gap-2 rounded-lg border bg-background px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
+          @click="clearFilter"
+        >
+          <X class="w-4 h-4" />
+          Clear
+        </button>
+        <button
+          class="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+          :disabled="auditStore.loading"
+          @click="refreshLogs"
+        >
+          <RefreshCw :class="cn('w-4 h-4', auditStore.loading && 'animate-spin')" />
+          {{ auditStore.loading ? 'Refreshing...' : 'Refresh' }}
+        </button>
+      </div>
+
+      <!-- Loading State -->
+      <div
+        v-if="auditStore.loading && !auditStore.logs.length"
+        class="flex flex-col items-center justify-center py-12 rounded-xl border bg-card"
+      >
+        <Loader2 class="w-8 h-8 animate-spin text-primary mb-3" />
+        <p class="text-muted-foreground">Loading audit logs...</p>
+      </div>
+
+      <!-- Empty State -->
+      <div
+        v-else-if="!auditStore.filteredLogs.length"
+        class="flex flex-col items-center justify-center py-12 rounded-xl border bg-card"
+      >
+        <ScrollText class="w-12 h-12 text-muted-foreground/50 mb-4" />
+        <h3 class="text-lg font-medium mb-1">No Audit Logs</h3>
+        <p class="text-muted-foreground text-sm">There are no audit logs to display</p>
+      </div>
+
+      <!-- Audit Table -->
+      <div v-else class="rounded-xl border bg-card overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b bg-muted/50">
+                <th class="px-4 py-3 text-left font-medium text-muted-foreground">Timestamp</th>
+                <th class="px-4 py-3 text-left font-medium text-muted-foreground">User</th>
+                <th class="px-4 py-3 text-left font-medium text-muted-foreground">Event</th>
+                <th class="px-4 py-3 text-left font-medium text-muted-foreground">Entity</th>
+                <th class="px-4 py-3 text-left font-medium text-muted-foreground">Session</th>
+                <th class="px-4 py-3 text-right font-medium text-muted-foreground">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y">
+              <tr
+                v-for="log in auditStore.filteredLogs"
+                :key="log.id"
+                class="hover:bg-muted/50 transition-colors"
+              >
+                <td class="px-4 py-3 whitespace-nowrap font-mono text-xs">
+                  {{ formatDate(log.created_at) }}
+                </td>
+                <td class="px-4 py-3">
+                  <span class="font-mono text-xs" :title="log.user_id">
+                    {{ truncate(log.user_id, 8) }}
+                  </span>
+                </td>
+                <td class="px-4 py-3">
+                  <span
+                    class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
+                    :class="getEventColor(log.event_type)"
+                  >
+                    {{ formatEventType(log.event_type) }}
+                  </span>
+                </td>
+                <td class="px-4 py-3">
+                  <span class="text-xs text-muted-foreground">{{ log.entity_type }}</span>
+                  <span class="font-mono text-xs block" :title="log.entity_id">
+                    {{ truncate(log.entity_id, 8) }}
+                  </span>
+                </td>
+                <td class="px-4 py-3">
+                  <span class="font-mono text-xs text-muted-foreground" :title="log.session_id">
+                    {{ truncate(log.session_id, 8) }}
+                  </span>
+                </td>
+                <td class="px-4 py-3">
+                  <div class="flex items-center justify-end">
+                    <button
+                      class="inline-flex items-center justify-center gap-2 rounded-lg border bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted transition-colors"
+                      @click="showDetails(log)"
+                    >
+                      <Eye class="w-3 h-3" />
+                      View
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Stats Summary -->
+      <div v-if="auditStore.logs.length" class="text-sm text-muted-foreground">
+        Showing {{ auditStore.filteredLogs.length }} of {{ auditStore.logs.length }} audit log entries
+      </div>
+    </template>
+
+    <!-- Details Modal -->
+    <div
+      v-if="selectedLog"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+      @click.self="selectedLog = null"
+    >
+      <div class="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl bg-card border shadow-lg">
+        <div class="flex items-center justify-between p-4 border-b">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <FileText class="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h3 class="font-semibold">Audit Log Details</h3>
+              <p class="text-sm text-muted-foreground">Complete log information</p>
+            </div>
+          </div>
+          <button
+            class="p-2 rounded-lg hover:bg-muted transition-colors"
+            @click="selectedLog = null"
+          >
+            <X class="w-4 h-4" />
+          </button>
+        </div>
+
+        <div class="p-4 space-y-4">
+          <!-- Details Grid -->
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div class="rounded-lg border bg-muted/30 p-3">
+              <div class="flex items-center gap-2 text-muted-foreground mb-1">
+                <Clock class="w-4 h-4" />
+                <span class="text-xs font-medium uppercase">Timestamp</span>
+              </div>
+              <p class="font-mono text-sm">{{ formatFullDate(selectedLog.created_at) }}</p>
+            </div>
+
+            <div class="rounded-lg border bg-muted/30 p-3">
+              <div class="flex items-center gap-2 text-muted-foreground mb-1">
+                <User class="w-4 h-4" />
+                <span class="text-xs font-medium uppercase">User ID</span>
+              </div>
+              <p class="font-mono text-sm break-all">{{ selectedLog.user_id }}</p>
+            </div>
+
+            <div class="rounded-lg border bg-muted/30 p-3">
+              <div class="flex items-center gap-2 text-muted-foreground mb-1">
+                <FileText class="w-4 h-4" />
+                <span class="text-xs font-medium uppercase">Event Type</span>
+              </div>
+              <span
+                class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
+                :class="getEventColor(selectedLog.event_type)"
+              >
+                {{ selectedLog.event_type }}
+              </span>
+            </div>
+
+            <div class="rounded-lg border bg-muted/30 p-3">
+              <div class="flex items-center gap-2 text-muted-foreground mb-1">
+                <Code class="w-4 h-4" />
+                <span class="text-xs font-medium uppercase">Entity</span>
+              </div>
+              <p class="font-mono text-sm">{{ selectedLog.entity_type }}: {{ selectedLog.entity_id }}</p>
+            </div>
+          </div>
+
+          <!-- Session ID -->
+          <div class="rounded-lg border bg-muted/30 p-3">
+            <div class="flex items-center gap-2 text-muted-foreground mb-1">
+              <Code class="w-4 h-4" />
+              <span class="text-xs font-medium uppercase">Session ID</span>
+            </div>
+            <p class="font-mono text-sm break-all">{{ selectedLog.session_id }}</p>
+          </div>
+
+          <!-- Metadata -->
+          <div class="rounded-lg border bg-muted/30 p-3">
+            <div class="flex items-center gap-2 text-muted-foreground mb-2">
+              <Code class="w-4 h-4" />
+              <span class="text-xs font-medium uppercase">Metadata</span>
+            </div>
+            <pre class="font-mono text-xs bg-background rounded-lg p-3 overflow-x-auto">{{ JSON.stringify(selectedLog.metadata, null, 2) }}</pre>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end p-4 border-t bg-muted/50">
+          <button
+            class="inline-flex items-center justify-center rounded-lg border bg-background px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
+            @click="selectedLog = null"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

@@ -120,7 +120,7 @@ class AuthProxyController extends Controller
      *
      * Proxies user info request to auth-service with user context.
      *
-     * @param  Request  $request  The HTTP request with Authorization header and user context
+     * @param Request $request The HTTP request with Authorization header and user context
      * @return JsonResponse The user data
      */
     public function me(Request $request): JsonResponse
@@ -132,6 +132,31 @@ class AuthProxyController extends Controller
             'X-User-ID' => $request->header('X-User-ID'),
             'X-User-Role' => $request->header('X-User-Role'),
         ])->get("{$this->authServiceUrl}/api/auth/me");
+
+        return response()->json(
+            $response->json(),
+            $response->status()
+        );
+    }
+
+    /**
+     * Get audit logs
+     *
+     * Proxies audit log request to auth-service with user context.
+     * Supports filtering by event_type, user_id, and entity_type.
+     *
+     * @param Request $request The HTTP request with Authorization header and query params
+     * @return JsonResponse The audit logs data
+     */
+    public function auditLogs(Request $request): JsonResponse
+    {
+        $response = Http::withHeaders([
+            'Content-Type' => 'application/json',
+            'Accept' => 'application/json',
+            'Authorization' => $request->header('Authorization'),
+            'X-User-ID' => $request->header('X-User-ID'),
+            'X-User-Role' => $request->header('X-User-Role'),
+        ])->get("{$this->authServiceUrl}/api/audit/logs", $request->query());
 
         return response()->json(
             $response->json(),

@@ -10,7 +10,7 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import api, { setAuthTokens, clearAuthTokens } from '@/api/client'
-import type { User, LoginCredentials, RegistrationData, AuthResponse } from '@/types'
+import type { User, LoginCredentials, RegistrationData, AuthResponse, APIResponse } from '@/types'
 
 /**
  * Auth Store
@@ -44,10 +44,10 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
 
     try {
-      const { data } = await api.post<AuthResponse>('/auth/login', credentials)
+      const { data } = await api.post<APIResponse<AuthResponse>>('/auth/login', credentials)
 
       // Store tokens
-      setAuthTokens(data.data?.access_token, data.data?.refresh_token)
+      setAuthTokens(data.data.access_token, data.data.refresh_token)
 
       // Fetch user info
       await fetchUser()
@@ -88,10 +88,10 @@ export const useAuthStore = defineStore('auth', () => {
    */
   async function fetchUser(): Promise<void> {
     try {
-      const { data } = await api.get<User>('/auth/me')
-      user.value = data.user
+      const { data } = await api.get<APIResponse<User>>('/auth/me')
+      user.value = data.data.user
       // Persist user to localStorage for persistence across reloads
-      localStorage.setItem('user', JSON.stringify(data.user))
+      localStorage.setItem('user', JSON.stringify(data.data.user))
     } catch (err: unknown) {
       user.value = null
       throw err

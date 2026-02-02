@@ -1,82 +1,40 @@
-<template>
-  <div class="auth-layout">
-    <div class="auth-container">
-      <div class="auth-card">
-        <header class="auth-header">
-          <h1 class="auth-title">IP Management System</h1>
-          <p class="auth-subtitle">Secure IP Address Management</p>
-        </header>
-
-        <main class="auth-content">
-          <router-view />
-        </main>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 /**
  * Auth Layout
  *
  * Layout component for authentication pages (login, register).
- * Provides a centered card layout with branding.
+ * Provides a centered card layout with branding using Tailwind CSS.
  *
  * @package Layouts
  */
+
+import { Shield } from 'lucide-vue-next'
 </script>
 
-<style scoped>
-.auth-layout {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 1rem;
-}
+<template>
+  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-700 p-4">
+    <div class="w-full max-w-md">
+      <!-- Card -->
+      <div class="bg-card rounded-2xl shadow-2xl border border-border/50 overflow-hidden">
+        <!-- Header -->
+        <div class="px-8 pt-8 pb-6 text-center">
+          <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-primary mb-4">
+            <Shield class="w-6 h-6 text-primary-foreground" />
+          </div>
+          <h1 class="text-2xl font-bold tracking-tight">IP Management System</h1>
+          <p class="text-muted-foreground mt-1">Secure IP Address Management</p>
+        </div>
 
-.auth-container {
-  width: 100%;
-  max-width: 420px;
-}
+        <!-- Content -->
+        <div class="px-8 pb-8">
+          <router-view />
+        </div>
+      </div>
 
-.auth-card {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-  padding: 2rem;
-}
-
-.auth-header {
-  text-align: center;
-  margin-bottom: 2rem;
-}
-
-.auth-title {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: #1a202c;
-  margin: 0 0 0.5rem 0;
-}
-
-.auth-subtitle {
-  font-size: 0.875rem;
-  color: #718096;
-  margin: 0;
-}
-
-.auth-content {
-  width: 100%;
-}
-
-@media (max-width: 480px) {
-  .auth-card {
-    padding: 1.5rem;
-  }
-
-  .auth-title {
-    font-size: 1.5rem;
-  }
-}
-</style>
+      <!-- Footer -->
+      <p class="text-center text-white/60 text-sm mt-6">
+        &copy; {{ new Date().getFullYear() }} IP Management System. All rights reserved.
+      </p>
+    </div>
+  </div>
+</template>

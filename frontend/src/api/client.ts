@@ -8,7 +8,7 @@
  */
 
 import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios'
-import type { AuthResponse } from '@/types'
+import type { AuthResponse, APIResponse } from '@/types'
 
 /**
  * Extended Axios request configuration with retry flag
@@ -80,7 +80,7 @@ api.interceptors.response.use(
         }
 
         // Attempt to refresh the token
-        const response = await axios.post<AuthResponse>(
+        const response = await axios.post<APIResponse<AuthResponse>>(
           `${baseURL}/auth/refresh`,
           {},
           {
@@ -108,7 +108,7 @@ api.interceptors.response.use(
         localStorage.removeItem('user')
 
         // Redirect to login page
-        // window.location.href = '/login'
+        window.location.href = '/login'
 
         return Promise.reject(refreshError)
       }

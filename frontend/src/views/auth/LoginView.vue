@@ -1,66 +1,3 @@
-<template>
-  <div class="login-view">
-    <h2 class="form-title">Sign In</h2>
-
-    <form @submit.prevent="handleSubmit" class="form">
-      <!-- Email Field -->
-      <div class="form-group">
-        <label for="email" class="form-label">Email Address</label>
-        <input
-          id="email"
-          v-model="form.email"
-          type="email"
-          class="form-input"
-          :class="{ 'form-input--error': errors.email }"
-          placeholder="Enter your email"
-          required
-          autocomplete="email"
-        />
-        <span v-if="errors.email" class="form-error">{{ errors.email }}</span>
-      </div>
-
-      <!-- Password Field -->
-      <div class="form-group">
-        <label for="password" class="form-label">Password</label>
-        <input
-          id="password"
-          v-model="form.password"
-          type="password"
-          class="form-input"
-          :class="{ 'form-input--error': errors.password }"
-          placeholder="Enter your password"
-          required
-          autocomplete="current-password"
-        />
-        <span v-if="errors.password" class="form-error">{{ errors.password }}</span>
-      </div>
-
-      <!-- Error Message -->
-      <div v-if="authStore.error" class="alert alert--error">
-        {{ authStore.error }}
-      </div>
-
-      <!-- Submit Button -->
-      <button
-        type="submit"
-        class="btn btn--primary btn--full"
-        :disabled="authStore.loading"
-      >
-        <span v-if="authStore.loading">Signing in...</span>
-        <span v-else>Sign In</span>
-      </button>
-    </form>
-
-    <!-- Register Link -->
-    <div class="form-footer">
-      <p>
-        Don't have an account?
-        <router-link to="/register" class="form-link">Create one</router-link>
-      </p>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 /**
  * Login View
@@ -75,6 +12,8 @@ import { reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import type { LoginCredentials } from '@/types'
+import { Mail, Lock, Loader2, ArrowRight } from 'lucide-vue-next'
+import { cn } from '@/lib/utils'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -140,119 +79,88 @@ async function handleSubmit(): Promise<void> {
 }
 </script>
 
-<style scoped>
-.login-view {
-  width: 100%;
-}
+<template>
+  <div class="space-y-6">
+    <div class="text-center">
+      <h2 class="text-xl font-semibold">Welcome back</h2>
+      <p class="text-sm text-muted-foreground mt-1">Sign in to your account</p>
+    </div>
 
-.form-title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #1a202c;
-  margin: 0 0 1.5rem 0;
-  text-align: center;
-}
+    <form @submit.prevent="handleSubmit" class="space-y-4">
+      <!-- Email Field -->
+      <div class="space-y-2">
+        <label for="email" class="text-sm font-medium">Email Address</label>
+        <div class="relative">
+          <Mail class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            id="email"
+            v-model="form.email"
+            type="email"
+            :class="cn(
+              'flex w-full rounded-lg border bg-background px-3 py-2.5 pl-10 text-sm ring-offset-background transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+              errors.email ? 'border-destructive focus-visible:ring-destructive' : 'border-input'
+            )"
+            placeholder="admin@example.com"
+            required
+            autocomplete="email"
+          />
+        </div>
+        <p v-if="errors.email" class="text-xs text-destructive">{{ errors.email }}</p>
+      </div>
 
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
+      <!-- Password Field -->
+      <div class="space-y-2">
+        <label for="password" class="text-sm font-medium">Password</label>
+        <div class="relative">
+          <Lock class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            id="password"
+            v-model="form.password"
+            type="password"
+            :class="cn(
+              'flex w-full rounded-lg border bg-background px-3 py-2.5 pl-10 text-sm ring-offset-background transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+              errors.password ? 'border-destructive focus-visible:ring-destructive' : 'border-input'
+            )"
+            placeholder="Enter your password"
+            required
+            autocomplete="current-password"
+          />
+        </div>
+        <p v-if="errors.password" class="text-xs text-destructive">{{ errors.password }}</p>
+      </div>
 
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.375rem;
-}
+      <!-- Error Message -->
+      <div
+        v-if="authStore.error"
+        class="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm"
+      >
+        {{ authStore.error }}
+      </div>
 
-.form-label {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #4a5568;
-}
+      <!-- Submit Button -->
+      <button
+        type="submit"
+        :disabled="authStore.loading"
+        class="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground ring-offset-background transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+      >
+        <Loader2 v-if="authStore.loading" class="w-4 h-4 animate-spin" />
+        <span v-if="authStore.loading">Signing in...</span>
+        <template v-else>
+          <span>Sign In</span>
+          <ArrowRight class="w-4 h-4" />
+        </template>
+      </button>
+    </form>
 
-.form-input {
-  padding: 0.625rem 0.875rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
-
-.form-input--error {
-  border-color: #f56565;
-}
-
-.form-input--error:focus {
-  border-color: #f56565;
-  box-shadow: 0 0 0 3px rgba(245, 101, 101, 0.1);
-}
-
-.form-error {
-  font-size: 0.75rem;
-  color: #f56565;
-}
-
-.alert {
-  padding: 0.75rem 1rem;
-  border-radius: 6px;
-  font-size: 0.875rem;
-}
-
-.alert--error {
-  background-color: #fff5f5;
-  color: #c53030;
-  border: 1px solid #feb2b2;
-}
-
-.btn {
-  padding: 0.625rem 1rem;
-  border: none;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.15s, opacity 0.15s;
-}
-
-.btn--primary {
-  background-color: #667eea;
-  color: white;
-}
-
-.btn--primary:hover:not(:disabled) {
-  background-color: #5a67d8;
-}
-
-.btn--full {
-  width: 100%;
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.form-footer {
-  margin-top: 1.5rem;
-  text-align: center;
-  font-size: 0.875rem;
-  color: #718096;
-}
-
-.form-link {
-  color: #667eea;
-  text-decoration: none;
-  font-weight: 500;
-}
-
-.form-link:hover {
-  text-decoration: underline;
-}
-</style>
+    <!-- Register Link -->
+    <div class="text-center text-sm">
+      <span class="text-muted-foreground">Don't have an account?</span>
+      <router-link
+        to="/register"
+        class="ml-1 font-medium text-primary hover:text-primary/90 underline-offset-4 hover:underline"
+      >
+        Create one
+      </router-link>
+    </div>
+  </div>
+</template>

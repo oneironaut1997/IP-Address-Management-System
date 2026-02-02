@@ -43,7 +43,7 @@ class AuthorizationTest extends TestCase
         ]);
 
         $response->assertStatus(200)
-            ->assertJsonCount(2, 'data.data');
+            ->assertJsonCount(2, 'data');
     }
 
     /**

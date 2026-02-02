@@ -10,8 +10,11 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { isAuthenticated } from '@/api/client'
 
-// Import views
+// Import layouts
 import AuthLayout from '@/layouts/AuthLayout.vue'
+import MainLayout from '@/layouts/MainLayout.vue'
+
+// Import views
 import LoginView from '@/views/auth/LoginView.vue'
 import RegisterView from '@/views/auth/RegisterView.vue'
 
@@ -25,6 +28,8 @@ export interface RouteMeta {
   guest?: boolean
   /** Requires super_admin role */
   requiresSuperAdmin?: boolean
+  [key: string]: unknown
+  [key: symbol]: unknown
 }
 
 /**
@@ -63,40 +68,41 @@ const router = createRouter({
       ],
     },
 
-    // Protected Routes
+    // Protected Routes (with MainLayout)
     {
-      path: '/dashboard',
-      name: 'dashboard',
-      component: () => import('@/views/dashboard/DashboardView.vue'),
+      path: '/',
+      component: MainLayout,
       meta: { requiresAuth: true } as RouteMeta,
-    },
-
-    // IP Management Routes
-    {
-      path: '/ip',
-      name: 'ip-list',
-      component: () => import('@/views/ip/IPListView.vue'),
-      meta: { requiresAuth: true } as RouteMeta,
-    },
-    {
-      path: '/ip/:id',
-      name: 'ip-detail',
-      component: () => import('@/views/ip/IPDetailView.vue'),
-      meta: { requiresAuth: true } as RouteMeta,
-    },
-    {
-      path: '/ip/:id/history',
-      name: 'ip-history',
-      component: () => import('@/views/ip/IPHistoryView.vue'),
-      meta: { requiresAuth: true } as RouteMeta,
-    },
-
-    // Audit Routes (Super Admin Only)
-    {
-      path: '/audit',
-      name: 'audit-dashboard',
-      component: () => import('@/views/audit/AuditDashboardView.vue'),
-      meta: { requiresAuth: true, requiresSuperAdmin: true } as RouteMeta,
+      children: [
+        {
+          path: 'dashboard',
+          name: 'dashboard',
+          component: () => import('@/views/dashboard/DashboardView.vue'),
+        },
+        // IP Management Routes
+        {
+          path: 'ip',
+          name: 'ip-list',
+          component: () => import('@/views/ip/IPListView.vue'),
+        },
+        {
+          path: 'ip/:id',
+          name: 'ip-detail',
+          component: () => import('@/views/ip/IPDetailView.vue'),
+        },
+        {
+          path: 'ip/:id/history',
+          name: 'ip-history',
+          component: () => import('@/views/ip/IPHistoryView.vue'),
+        },
+        // Audit Routes (Super Admin Only)
+        {
+          path: 'audit',
+          name: 'audit-dashboard',
+          component: () => import('@/views/audit/AuditDashboardView.vue'),
+          meta: { requiresSuperAdmin: true } as RouteMeta,
+        },
+      ],
     },
 
     // 404 Not Found
