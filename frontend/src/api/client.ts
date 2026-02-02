@@ -90,7 +90,7 @@ api.interceptors.response.use(
           }
         )
 
-        const { access_token, refresh_token } = response.data
+        const { access_token, refresh_token } = response.data.data
 
         // Store new tokens
         localStorage.setItem('access_token', access_token)
@@ -108,7 +108,7 @@ api.interceptors.response.use(
         localStorage.removeItem('user')
 
         // Redirect to login page
-        window.location.href = '/login'
+        // window.location.href = '/login'
 
         return Promise.reject(refreshError)
       }

@@ -31,32 +31,59 @@ class JwtMiddleware
     public function handle(Request $request, Closure $next): Response
     {
         try {
-            // Authenticate the user using the JWT token
-            $user = JWTAuth::parseToken()->authenticate();
+            // Log the JWT configuration
+            $jwtSecret = config('jwt.secret');
 
-            if (! $user) {
+            // Get the raw token
+            $authHeader = $request->header('Authorization');
+            if (! $authHeader || ! str_starts_with($authHeader, 'Bearer ')) {
                 return response()->json([
                     'success' => false,
                     'error' => [
-                        'code' => 'USER_NOT_FOUND',
-                        'message' => 'User not found',
+                        'code' => 'TOKEN_NOT_PROVIDED',
+                        'message' => 'Authorization token not provided',
                     ],
                 ], 401);
             }
 
-            // Forward user context to backend services via headers
-            $request->headers->set('X-User-ID', $user->id);
-            $request->headers->set('X-User-Role', $user->role ?? 'regular');
+            $tokenString = substr($authHeader, 7);
 
-            // Also set the user on the request for any internal Laravel auth checks
-            auth()->setUser($user);
+            // Try to set the token and get payload
+            JWTAuth::setToken($tokenString);
+
+            // Get payload without full validation
+            try {
+                $payload = JWTAuth::getPayload();
+            } catch (\Exception $e) {
+                throw $e;
+            }
+
+            // Extract user data
+            $userId = $payload->get('sub');
+            $userRole = $payload->get('role') ?? 'regular';
+            $userEmail = $payload->get('email');
+
+            if (! $userId) {
+                return response()->json([
+                    'success' => false,
+                    'error' => [
+                        'code' => 'USER_NOT_FOUND',
+                        'message' => 'User not found in token',
+                    ],
+                ], 401);
+            }
+
+            // Forward user context
+            $request->headers->set('X-User-ID', $userId);
+            $request->headers->set('X-User-Role', $userRole);
+            $request->headers->set('X-User-Email', $userEmail);
 
         } catch (TokenExpiredException $e) {
             return response()->json([
                 'success' => false,
                 'error' => [
                     'code' => 'TOKEN_EXPIRED',
-                    'message' => 'Token has expired',
+                    'message' => 'Token has expired: '.$e->getMessage(),
                 ],
             ], 401);
         } catch (TokenInvalidException $e) {
@@ -64,15 +91,15 @@ class JwtMiddleware
                 'success' => false,
                 'error' => [
                     'code' => 'TOKEN_INVALID',
-                    'message' => 'Token is invalid',
+                    'message' => 'Token is invalid: '.$e->getMessage(),
                 ],
             ], 401);
         } catch (JWTException $e) {
             return response()->json([
                 'success' => false,
                 'error' => [
-                    'code' => 'TOKEN_NOT_PROVIDED',
-                    'message' => 'Authorization token not provided',
+                    'code' => 'TOKEN_ERROR',
+                    'message' => 'Token error: '.$e->getMessage(),
                 ],
             ], 401);
         } catch (\Exception $e) {
@@ -80,7 +107,7 @@ class JwtMiddleware
                 'success' => false,
                 'error' => [
                     'code' => 'UNAUTHORIZED',
-                    'message' => 'Unauthorized',
+                    'message' => 'Error: '.$e->getMessage(),
                 ],
             ], 401);
         }

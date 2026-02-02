@@ -47,7 +47,7 @@ export const useAuthStore = defineStore('auth', () => {
       const { data } = await api.post<AuthResponse>('/auth/login', credentials)
 
       // Store tokens
-      setAuthTokens(data.access_token, data.refresh_token)
+      setAuthTokens(data.data?.access_token, data.data?.refresh_token)
 
       // Fetch user info
       await fetchUser()
@@ -89,9 +89,9 @@ export const useAuthStore = defineStore('auth', () => {
   async function fetchUser(): Promise<void> {
     try {
       const { data } = await api.get<User>('/auth/me')
-      user.value = data
+      user.value = data.user
       // Persist user to localStorage for persistence across reloads
-      localStorage.setItem('user', JSON.stringify(data))
+      localStorage.setItem('user', JSON.stringify(data.user))
     } catch (err: unknown) {
       user.value = null
       throw err

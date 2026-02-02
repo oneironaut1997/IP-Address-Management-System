@@ -10,7 +10,7 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import api from '@/api/client'
-import type { IPAddress, IPHistory, IPFormData } from '@/types'
+import type { IPAddress, IPHistory, IPFormData, APIResponse } from '@/types'
 
 /**
  * IP Store
@@ -46,8 +46,8 @@ export const useIPStore = defineStore('ip', () => {
     error.value = null
 
     try {
-      const { data } = await api.get<IPAddress[]>('/ip')
-      ips.value = data
+      const { data } = await api.get<APIResponse<IPAddress[]>>('/ip')
+      ips.value = data.data ?? []
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to fetch IPs'
       error.value = message
@@ -145,8 +145,8 @@ export const useIPStore = defineStore('ip', () => {
     error.value = null
 
     try {
-      const { data } = await api.get<IPHistory[]>(`/ip/${id}/history`)
-      history.value = data
+      const { data } = await api.get<APIResponse<IPHistory[]>>(`/ip/${id}/history`)
+      history.value = data.data ?? []
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to fetch history'
       error.value = message

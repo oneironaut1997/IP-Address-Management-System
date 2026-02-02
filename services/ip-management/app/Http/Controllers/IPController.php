@@ -28,7 +28,7 @@ class IPController extends Controller
     {
         $ips = IPAddress::with('history')
             ->orderBy('created_at', 'desc')
-            ->paginate(15);
+            ->get();
 
         return response()->json([
             'success' => true,
