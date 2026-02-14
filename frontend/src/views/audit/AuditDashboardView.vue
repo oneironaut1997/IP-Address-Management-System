@@ -8,10 +8,10 @@
  * @package Views/Audit
  */
 
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useAuditStore } from '@/stores/audit'
-import type { AuditLog } from '@/types'
+import type { AuditLog, AuditLogType } from '@/types'
 import {
   Shield,
   Loader2,
@@ -26,6 +26,8 @@ import {
   User,
   FileText,
   Code,
+  Key,
+  Server,
 } from 'lucide-vue-next'
 import { cn } from '@/lib/utils'
 
@@ -33,6 +35,7 @@ const authStore = useAuthStore()
 const auditStore = useAuditStore()
 
 const selectedFilter = ref('')
+const selectedTypeFilter = ref<AuditLogType>('all')
 const selectedLog = ref<AuditLog | null>(null)
 
 function formatEventType(eventType: string): string {
@@ -48,6 +51,12 @@ function getEventColor(eventType: string): string {
   if (eventType.includes('created')) return 'bg-blue-100 text-blue-700'
   if (eventType.includes('updated')) return 'bg-purple-100 text-purple-700'
   if (eventType.includes('deleted')) return 'bg-rose-100 text-rose-700'
+  return 'bg-gray-100 text-gray-700'
+}
+
+function getTypeBadgeColor(type: string | undefined): string {
+  if (type === 'auth') return 'bg-indigo-100 text-indigo-700'
+  if (type === 'ip') return 'bg-orange-100 text-orange-700'
   return 'bg-gray-100 text-gray-700'
 }
 
@@ -82,6 +91,7 @@ function applyFilter(): void {
 
 function clearFilter(): void {
   selectedFilter.value = ''
+  selectedTypeFilter.value = 'all'
   auditStore.clearFilter()
 }
 
@@ -90,8 +100,12 @@ function showDetails(log: AuditLog): void {
 }
 
 async function refreshLogs(): Promise<void> {
-  await auditStore.fetchAllLogs()
+  await auditStore.fetchAllLogs(selectedTypeFilter.value)
 }
+
+watch(selectedTypeFilter, () => {
+  refreshLogs()
+})
 
 onMounted(() => {
   if (authStore.isSuperAdmin) {
@@ -142,6 +156,20 @@ onMounted(() => {
     <template v-else>
       <!-- Filters -->
       <div class="flex flex-wrap items-end gap-4 p-4 rounded-xl border bg-card">
+        <div class="min-w-[150px]">
+          <label class="text-sm font-medium mb-2 block">Source Type</label>
+          <div class="relative">
+            <Server class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <select
+              v-model="selectedTypeFilter"
+              class="w-full rounded-lg border bg-background pl-9 pr-4 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <option value="all">All Sources</option>
+              <option value="auth">Authentication</option>
+              <option value="ip">IP Management</option>
+            </select>
+          </div>
+        </div>
         <div class="flex-1 min-w-[200px]">
           <label class="text-sm font-medium mb-2 block">Filter by Event Type</label>
           <div class="relative">
@@ -159,7 +187,7 @@ onMounted(() => {
           </div>
         </div>
         <button
-          v-if="selectedFilter"
+          v-if="selectedFilter || selectedTypeFilter !== 'all'"
           class="inline-flex items-center justify-center gap-2 rounded-lg border bg-background px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
           @click="clearFilter"
         >
@@ -202,10 +230,10 @@ onMounted(() => {
             <thead>
               <tr class="border-b bg-muted/50">
                 <th class="px-4 py-3 text-left font-medium text-muted-foreground">Timestamp</th>
+                <th class="px-4 py-3 text-left font-medium text-muted-foreground">Source</th>
                 <th class="px-4 py-3 text-left font-medium text-muted-foreground">User</th>
                 <th class="px-4 py-3 text-left font-medium text-muted-foreground">Event</th>
                 <th class="px-4 py-3 text-left font-medium text-muted-foreground">Entity</th>
-                <th class="px-4 py-3 text-left font-medium text-muted-foreground">Session</th>
                 <th class="px-4 py-3 text-right font-medium text-muted-foreground">Actions</th>
               </tr>
             </thead>
@@ -217,6 +245,16 @@ onMounted(() => {
               >
                 <td class="px-4 py-3 whitespace-nowrap font-mono text-xs">
                   {{ formatDate(log.created_at) }}
+                </td>
+                <td class="px-4 py-3">
+                  <span
+                    class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium"
+                    :class="getTypeBadgeColor(log.type)"
+                  >
+                    <Key v-if="log.type === 'auth'" class="w-3 h-3" />
+                    <Server v-else-if="log.type === 'ip'" class="w-3 h-3" />
+                    {{ log.type === 'auth' ? 'Auth' : log.type === 'ip' ? 'IP' : 'Unknown' }}
+                  </span>
                 </td>
                 <td class="px-4 py-3">
                   <span class="font-mono text-xs" :title="log.user_id">
@@ -235,11 +273,6 @@ onMounted(() => {
                   <span class="text-xs text-muted-foreground">{{ log.entity_type }}</span>
                   <span class="font-mono text-xs block" :title="log.entity_id">
                     {{ truncate(log.entity_id, 8) }}
-                  </span>
-                </td>
-                <td class="px-4 py-3">
-                  <span class="font-mono text-xs text-muted-foreground" :title="log.session_id">
-                    {{ truncate(log.session_id, 8) }}
                   </span>
                 </td>
                 <td class="px-4 py-3">

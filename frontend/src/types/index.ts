@@ -30,6 +30,14 @@ export type IPType = 'ipv4' | 'ipv6'
 export type IPHistoryAction = 'created' | 'updated' | 'deleted'
 
 /**
+ * Audit Log Type
+ * - auth: Authentication events (login, logout)
+ * - ip: IP management events (ip.created, ip.updated, ip.deleted)
+ * - all: Special type for fetching both (used in API requests)
+ */
+export type AuditLogType = 'auth' | 'ip' | 'all'
+
+/**
  * User Entity
  *
  * Represents an authenticated user in the system.
@@ -95,10 +103,13 @@ export interface IPHistory {
  * Audit Log Entity
  *
  * Represents a system audit log entry for compliance and tracking.
+ * Can be either an auth event (login/logout) or an IP management event.
  */
 export interface AuditLog {
   /** Unique identifier (UUID) */
   id: string
+  /** Type of log: 'auth' for authentication events, 'ip' for IP management events */
+  type?: AuditLogType
   /** UUID of the user who performed the action */
   user_id: string
   /** Type of event (e.g., 'login', 'ip.created', 'ip.updated') */
@@ -113,6 +124,24 @@ export interface AuditLog {
   session_id: string
   /** Timestamp when the event occurred */
   created_at: string
+}
+
+/**
+ * Unified Audit Log Response
+ *
+ * Response from the unified audit logs endpoint.
+ */
+export interface UnifiedAuditResponse {
+  success: boolean
+  data: AuditLog[]
+  meta: {
+    current_page: number
+    per_page: number
+    total: number
+    auth_count: number
+    ip_count: number
+    type: 'auth' | 'ip' | 'all'
+  }
 }
 
 /**

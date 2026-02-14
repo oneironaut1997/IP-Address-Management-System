@@ -54,9 +54,36 @@ A comprehensive full-stack IP Address Management System built with Laravel micro
 - **JWT Authentication** with automatic token refresh
 - **Role-based Access Control** (regular user, super_admin)
 - **IP CRUD Operations** with IPv4/IPv6 validation
-- **Audit Logging** for all operations (immutable)
+- **Unified Audit Logging** combining auth events and IP management activities
 - **IP History Tracking** for all changes
 - **Responsive UI** with toast notifications
+
+### Architecture Patterns
+
+The backend services follow industry-standard design patterns:
+
+| Pattern | Implementation | Purpose |
+|---------|---------------|---------|
+| **Service Layer** | `AuthService`, `IPService` | Encapsulates business logic, separates concerns from controllers |
+| **Form Request** | `LoginRequest`, `StoreIPRequest`, etc. | Validates and authorizes HTTP requests |
+| **API Resource** | `UserResource`, `IPAddressResource`, etc. | Transforms models into consistent JSON responses |
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        Request Flow                              │
+│                                                                  │
+│  HTTP Request → Form Request (validation) → Controller          │
+│                                                    │              │
+│                                                    ▼              │
+│                                              Service Layer       │
+│                                                    │              │
+│                                                    ▼              │
+│                                              API Resource        │
+│                                                    │              │
+│                                                    ▼              │
+│                                              JSON Response       │
+└─────────────────────────────────────────────────────────────────┘
+```
 
 ## Prerequisites
 
@@ -101,6 +128,9 @@ docker exec -it ipms-auth-service php artisan migrate:fresh --seed
 
 # IP Management Service migrations
 docker exec -it ipms-ip-management php artisan migrate:fresh
+
+# Run the queue worker
+docker-compose exec auth-service php artisan queue:work
 ```
 
 ### 5. Verify Installation
@@ -149,7 +179,56 @@ After seeding, the following super admin account is available:
 
 | Method | Endpoint | Description | Auth Required | Role |
 |--------|----------|-------------|---------------|------|
-| GET | `/api/audit/logs` | Get all audit logs | Yes | Super Admin |
+| GET | `/api/audit/logs` | Get unified audit logs (auth + IP activities) | Yes | Super Admin |
+
+#### Query Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `type` | string | 'all' | Filter by type: 'auth', 'ip', or 'all' |
+| `event_type` | string | null | Filter by event type |
+| `user_id` | string | null | Filter by user ID |
+| `from` | datetime | null | Filter from date |
+| `to` | datetime | null | Filter to date |
+| `page` | integer | 1 | Page number |
+| `per_page` | integer | 50 | Items per page (max 100) |
+
+#### Response Example
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "uuid",
+      "type": "auth",
+      "event_type": "login",
+      "entity_type": "Session",
+      "entity_id": "uuid",
+      "user_id": "uuid",
+      "metadata": { "ip_address": "...", "user_agent": "..." },
+      "created_at": "2024-01-01T00:00:00Z"
+    },
+    {
+      "id": "uuid",
+      "type": "ip",
+      "event_type": "ip.created",
+      "entity_type": "IPAddress",
+      "entity_id": "uuid",
+      "user_id": "uuid",
+      "metadata": { "ip": {...} },
+      "created_at": "2024-01-01T00:05:00Z"
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "per_page": 50,
+    "total": 100,
+    "auth_count": 60,
+    "ip_count": 40,
+    "type": "all"
+  }
+}
+```
 
 ### Request/Response Examples
 
@@ -189,6 +268,9 @@ curl -X POST http://localhost:8000/api/ip \
 #### Backend Tests
 
 ```bash
+# Gateway tests
+docker exec -it ipms-gateway php artisan test
+
 # Auth Service tests
 docker exec -it ipms-auth-service php artisan test
 
@@ -291,10 +373,6 @@ ip-management-system/
 ├── docker/                     # Docker configurations
 │   ├── mysql/                  # MySQL initialization scripts
 │   └── redis/                  # Redis configuration
-├── docs/                       # Documentation
-│   ├── architecture_overview.md
-│   ├── implementation_plan.md
-│   └── ip_management_system_plan.md
 ├── frontend/                   # Vue 3 Frontend
 │   ├── src/
 │   │   ├── api/               # API client
@@ -305,8 +383,22 @@ ip-management-system/
 │   └── package.json
 └── services/                   # Backend services
     ├── auth-service/          # Authentication service
+    │   └── app/
+    │       ├── Http/
+    │       │   ├── Controllers/   # HTTP request handlers
+    │       │   ├── Requests/      # Form request validation
+    │       │   └── Resources/     # API response transformers
+    │       ├── Models/            # Eloquent models
+    │       └── Services/          # Business logic layer
     ├── gateway/               # API Gateway
     └── ip-management/         # IP Management service
+        └── app/
+            ├── Http/
+            │   ├── Controllers/   # HTTP request handlers
+            │   ├── Requests/      # Form request validation
+            │   └── Resources/     # API response transformers
+            ├── Models/            # Eloquent models
+            └── Services/          # Business logic layer
 ```
 
 ## Security Considerations

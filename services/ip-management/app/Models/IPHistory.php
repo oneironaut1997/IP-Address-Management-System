@@ -53,6 +53,7 @@ class IPHistory extends Model
         'old_values',
         'new_values',
         'action',
+        'created_at',
     ];
 
     /**

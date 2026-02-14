@@ -4,35 +4,52 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreIPRequest;
 use App\Http\Requests\UpdateIPRequest;
+use App\Http\Resources\IPAddressResource;
+use App\Http\Resources\IPHistoryCollection;
+use App\Http\Resources\IPHistoryResource;
 use App\Models\IPAddress;
-use App\Models\IPHistory;
+use App\Services\IPService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use PhpIP\IP;
 
 /**
  * Class IPController
  *
- * Handles CRUD operations for IP addresses.
- * Implements authorization policies and comprehensive audit logging.
+ * HTTP Controller for IP address management endpoints.
+ * Delegates business logic to IPService and uses API Resources
+ * for consistent response formatting.
+ *
+ * Responsibilities:
+ * - Request validation (via Form Requests)
+ * - Authorization checks
+ * - HTTP response formatting
+ * - Delegating business logic to service layer
  */
 class IPController extends Controller
 {
     /**
+     * @param IPService $ipService The IP management service
+     */
+    public function __construct(
+        protected IPService $ipService
+    ) {}
+
+    /**
      * Display a listing of all IP addresses.
      *
      * All authenticated users can view all IP addresses.
+     *
+     * @param  Request  $request  The HTTP request
+     * @return JsonResponse
      */
     public function index(Request $request): JsonResponse
     {
-        $ips = IPAddress::with('history')
-            ->orderBy('created_at', 'desc')
-            ->get();
+        $ips = $this->ipService->getAllIPAddresses();
 
         return response()->json([
             'success' => true,
-            'data' => $ips,
+            'data' => IPAddressResource::collection($ips),
         ]);
     }
 
@@ -41,69 +58,39 @@ class IPController extends Controller
      *
      * Validates IP format using rlanvin/php-ip library.
      * Logs activity for audit trail.
+     *
+     * @param  StoreIPRequest  $request  Validated store request
+     * @return JsonResponse
      */
     public function store(StoreIPRequest $request): JsonResponse
     {
-        $validated = $request->validated();
+        $userId = $request->header('X-User-ID');
 
-        // Validate and detect IP type using php-ip library
-        try {
-            $ip = IP::create($validated['ip_address']);
-            $type = $ip->getVersion() === 4 ? 'ipv4' : 'ipv6';
-        } catch (\InvalidArgumentException $e) {
+        $result = $this->ipService->createIPAddress($request->validated(), $userId);
+
+        if (! $result['success']) {
             return response()->json([
                 'success' => false,
-                'error' => [
-                    'code' => 'VALIDATION_ERROR',
-                    'message' => 'Invalid IP address format.',
-                ],
+                'error' => $result['error'],
             ], Response::HTTP_BAD_REQUEST);
         }
 
-        // Get authenticated user from request (set by middleware)
-        $userId = $request->header('X-User-ID');
-
-        $ipAddress = IPAddress::create([
-            'user_id' => $userId,
-            'ip_address' => $validated['ip_address'],
-            'label' => $validated['label'],
-            'comment' => $validated['comment'] ?? null,
-            'type' => $type,
-        ]);
-
-        // Log the creation in history table
-        IPHistory::create([
-            'ip_address_id' => $ipAddress->id,
-            'modified_by' => $userId,
-            'old_values' => null,
-            'new_values' => $ipAddress->toArray(),
-            'action' => 'created',
-        ]);
-
-        // Log activity using Spatie Activity Log
-        activity()
-            ->performedOn($ipAddress)
-            ->event('ip.created')
-            ->withProperties(['ip' => $ipAddress->toArray(), 'causer_id' => $userId])
-            ->tap(function ($activity) use ($userId) {
-                $activity->causer_id = $userId;
-                $activity->causer_type = null;
-            })
-            ->log('ip.created');
-
         return response()->json([
             'success' => true,
-            'data' => $ipAddress,
+            'data' => new IPAddressResource($result['ip']),
             'message' => 'IP address created successfully.',
         ], Response::HTTP_CREATED);
     }
 
     /**
      * Display the specified IP address.
+     *
+     * @param  string  $id  The IP address ID
+     * @return JsonResponse
      */
     public function show(string $id): JsonResponse
     {
-        $ipAddress = IPAddress::with('history')->find($id);
+        $ipAddress = $this->ipService->getIPAddressById($id);
 
         if (! $ipAddress) {
             return response()->json([
@@ -117,7 +104,7 @@ class IPController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $ipAddress,
+            'data' => new IPAddressResource($ipAddress),
         ]);
     }
 
@@ -126,10 +113,14 @@ class IPController extends Controller
      *
      * Only the owner or super_admin can update an IP address.
      * Tracks changes in both history table and activity log.
+     *
+     * @param  UpdateIPRequest  $request  Validated update request
+     * @param  string  $id  The IP address ID
+     * @return JsonResponse
      */
     public function update(UpdateIPRequest $request, string $id): JsonResponse
     {
-        $ipAddress = IPAddress::find($id);
+        $ipAddress = $this->ipService->getIPAddressById($id);
 
         if (! $ipAddress) {
             return response()->json([
@@ -145,7 +136,7 @@ class IPController extends Controller
         $userId = $request->header('X-User-ID');
         $userRole = $request->header('X-User-Role');
 
-        if ($ipAddress->user_id !== $userId && $userRole !== 'super_admin') {
+        if (! $this->ipService->canUpdate($ipAddress, $userId, $userRole)) {
             return response()->json([
                 'success' => false,
                 'error' => [
@@ -155,38 +146,11 @@ class IPController extends Controller
             ], Response::HTTP_FORBIDDEN);
         }
 
-        // Capture old values before update
-        $oldValues = $ipAddress->toArray();
-
-        $ipAddress->update($request->validated());
-
-        // Log the update in history table
-        IPHistory::create([
-            'ip_address_id' => $ipAddress->id,
-            'modified_by' => $userId,
-            'old_values' => $oldValues,
-            'new_values' => $ipAddress->fresh()->toArray(),
-            'action' => 'updated',
-        ]);
-
-        // Log activity using Spatie Activity Log
-        activity()
-            ->performedOn($ipAddress)
-            ->event('ip.updated')
-            ->withProperties([
-                'old' => $oldValues,
-                'new' => $ipAddress->fresh()->toArray(),
-                'causer_id' => $userId,
-            ])
-            ->tap(function ($activity) use ($userId) {
-                $activity->causer_id = $userId;
-                $activity->causer_type = null;
-            })
-            ->log('ip.updated');
+        $updatedIp = $this->ipService->updateIPAddress($ipAddress, $request->validated(), $userId);
 
         return response()->json([
             'success' => true,
-            'data' => $ipAddress,
+            'data' => new IPAddressResource($updatedIp),
             'message' => 'IP address updated successfully.',
         ]);
     }
@@ -196,10 +160,14 @@ class IPController extends Controller
      *
      * Only super_admin can delete IP addresses.
      * Uses soft deletes for data recovery.
+     *
+     * @param  Request  $request  The HTTP request
+     * @param  string  $id  The IP address ID
+     * @return JsonResponse
      */
     public function destroy(Request $request, string $id): JsonResponse
     {
-        $ipAddress = IPAddress::find($id);
+        $ipAddress = $this->ipService->getIPAddressById($id);
 
         if (! $ipAddress) {
             return response()->json([
@@ -215,7 +183,7 @@ class IPController extends Controller
         $userId = $request->header('X-User-ID');
         $userRole = $request->header('X-User-Role');
 
-        if ($userRole !== 'super_admin') {
+        if (! $this->ipService->canDelete($userRole)) {
             return response()->json([
                 'success' => false,
                 'error' => [
@@ -225,30 +193,7 @@ class IPController extends Controller
             ], Response::HTTP_FORBIDDEN);
         }
 
-        $oldValues = $ipAddress->toArray();
-
-        // Soft delete the IP address
-        $ipAddress->delete();
-
-        // Log the deletion in history table
-        IPHistory::create([
-            'ip_address_id' => $ipAddress->id,
-            'modified_by' => $userId,
-            'old_values' => $oldValues,
-            'new_values' => null,
-            'action' => 'deleted',
-        ]);
-
-        // Log activity using Spatie Activity Log
-        activity()
-            ->performedOn($ipAddress)
-            ->event('ip.deleted')
-            ->withProperties(['ip' => $oldValues, 'causer_id' => $userId])
-            ->tap(function ($activity) use ($userId) {
-                $activity->causer_id = $userId;
-                $activity->causer_type = null;
-            })
-            ->log('ip.deleted');
+        $this->ipService->deleteIPAddress($ipAddress, $userId);
 
         return response()->json([
             'success' => true,
@@ -258,10 +203,13 @@ class IPController extends Controller
 
     /**
      * Get the change history for a specific IP address.
+     *
+     * @param  string  $id  The IP address ID
+     * @return JsonResponse
      */
     public function history(string $id): JsonResponse
     {
-        $ipAddress = IPAddress::find($id);
+        $ipAddress = $this->ipService->getIPAddressById($id);
 
         if (! $ipAddress) {
             return response()->json([
@@ -273,13 +221,11 @@ class IPController extends Controller
             ], Response::HTTP_NOT_FOUND);
         }
 
-        $history = IPHistory::where('ip_address_id', $id)
-            ->orderBy('created_at', 'desc')
-            ->get();
+        $history = $this->ipService->getIPAddressHistory($id);
 
         return response()->json([
             'success' => true,
-            'data' => $history,
+            'data' => IPHistoryResource::collection($history),
         ]);
     }
 }

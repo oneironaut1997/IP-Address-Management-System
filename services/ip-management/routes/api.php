@@ -1,18 +1,19 @@
 <?php
 
+use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\IPController;
 use Illuminate\Support\Facades\Route;
 
 /*
-|--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| is assigned the "api" middleware group.
-|
-*/
+ |--------------------------------------------------------------------------
+ | API Routes
+ |--------------------------------------------------------------------------
+ |
+ | Here is where you can register API routes for your application. These
+ | routes are loaded by the RouteServiceProvider within a group which
+ | is assigned the "api" middleware group.
+ |
+ */
 
 // IP Management Routes
 // Note: Authentication is handled by the Gateway service
@@ -20,4 +21,15 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('api')->group(function () {
     Route::apiResource('ip', IPController::class);
     Route::get('ip/{ip}/history', [IPController::class, 'history']);
+
+    /*
+     |--------------------------------------------------------------------------
+     | Activity Log Routes
+     |--------------------------------------------------------------------------
+     |
+     | Routes for retrieving activity logs from Spatie Activity Log.
+     | These are used for the unified audit dashboard.
+     |
+     */
+    Route::get('activity/logs', [ActivityLogController::class, 'index']);
 });

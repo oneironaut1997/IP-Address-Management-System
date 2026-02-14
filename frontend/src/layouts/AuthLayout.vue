@@ -12,7 +12,7 @@ import { Shield } from 'lucide-vue-next'
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-700 p-4">
+  <div class="min-h-screen flex items-center justify-center p-4">
     <div class="w-full max-w-md">
       <!-- Card -->
       <div class="bg-card rounded-2xl shadow-2xl border border-border/50 overflow-hidden">
