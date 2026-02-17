@@ -91,6 +91,11 @@ class AuthService
             $user->id
         );
 
+        // Also store in user's token set for efficient logout
+        Redis::sadd("user:{$user->id}:refresh_tokens", $refreshJti);
+        // Set expiry on the set to match refresh token TTL
+        Redis::expire("user:{$user->id}:refresh_tokens", $this->refreshTokenTtl * 60);
+
         // Create user session for audit trail
         $session = UserSession::create([
             'user_id' => $user->id,
@@ -121,7 +126,9 @@ class AuthService
      * Logout the authenticated user.
      *
      * Invalidates the current access token and removes the associated
-     * refresh token from Redis. Fires logout event for audit logging.
+     * refresh tokens from Redis. Uses Redis sets for O(1) lookups
+     * instead of O(N) key scanning.
+     * Fires logout event for audit logging.
      *
      * @param  User  $user  The authenticated user
      * @param  string|null  $jti  The JWT ID from the current token
@@ -129,14 +136,17 @@ class AuthService
      */
     public function logout(User $user, ?string $jti = null): void
     {
-        // Remove refresh tokens associated with this user from Redis
-        $refreshKeys = Redis::keys('refresh:*');
-        foreach ($refreshKeys as $key) {
-            $keyValue = str_replace(config('database.redis.options.prefix'), '', $key);
-            if (Redis::get($keyValue) === $user->id) {
-                Redis::del($keyValue);
-            }
+        // Get all refresh tokens for this user from the set (O(1) operation)
+        $userTokenSet = "user:{$user->id}:refresh_tokens";
+        $refreshJtis = Redis::smembers($userTokenSet);
+
+        // Delete each refresh token
+        foreach ($refreshJtis as $refreshJti) {
+            Redis::del("refresh:{$refreshJti}");
         }
+
+        // Delete the user's token set
+        Redis::del($userTokenSet);
 
         // Fire logout event for audit logging
         event(new UserLoggedOut($user));
@@ -209,6 +219,8 @@ class AuthService
 
             // Invalidate old refresh token
             Redis::del("refresh:{$refreshJti}");
+            // Remove from user's token set
+            Redis::srem("user:{$user->id}:refresh_tokens", $refreshJti);
 
             // Generate new tokens
             $newAccessToken = JWTAuth::fromUser($user);
@@ -224,6 +236,10 @@ class AuthService
                 $this->refreshTokenTtl * 60,
                 $user->id
             );
+
+            // Add to user's token set for efficient logout
+            Redis::sadd("user:{$user->id}:refresh_tokens", $newRefreshJti);
+            Redis::expire("user:{$user->id}:refresh_tokens", $this->refreshTokenTtl * 60);
 
             // Update user session
             UserSession::where('token_jti', $refreshJti)

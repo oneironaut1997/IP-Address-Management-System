@@ -2,9 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\LoginProxyRequest;
+use App\Http\Requests\RegisterProxyRequest;
+use App\Http\Requests\RefreshTokenProxyRequest;
+use App\Http\Resources\ProxyResponseResource;
+use App\Http\Resources\UnifiedAuditLogCollection;
+use App\Services\AuthProxyService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Http\Response;
 
 /**
  * Auth Proxy Controller
@@ -12,42 +18,32 @@ use Illuminate\Support\Facades\Http;
  * Proxies authentication requests to the auth-service.
  * Handles login, register, refresh, logout, and user info endpoints.
  * Also provides unified audit log endpoint combining auth and IP activities.
+ *
+ * Responsibilities:
+ * - Request validation (via Form Requests)
+ * - HTTP response formatting
+ * - Delegating proxy logic to service layer
  */
 class AuthProxyController extends Controller
 {
     /**
-     * Auth service base URL
+     * @param AuthProxyService $authProxyService The authentication proxy service
      */
-    protected string $authServiceUrl;
-
-    /**
-     * IP Management service base URL
-     */
-    protected string $ipServiceUrl;
-
-    /**
-     * Constructor
-     */
-    public function __construct()
-    {
-        $this->authServiceUrl = 'http://auth-service:8000';
-        $this->ipServiceUrl = 'http://ip-management:8000';
-    }
+    public function __construct(
+        protected AuthProxyService $authProxyService
+    ) {}
 
     /**
      * Handle user login
      *
      * Proxies login request to auth-service and returns tokens.
      *
-     * @param  Request  $request  The HTTP request containing email and password
+     * @param  LoginProxyRequest  $request  Validated login request
      * @return JsonResponse The authentication response with tokens
      */
-    public function login(Request $request): JsonResponse
+    public function login(LoginProxyRequest $request): JsonResponse
     {
-        $response = Http::withHeaders([
-            'Content-Type' => 'application/json',
-            'Accept' => 'application/json',
-        ])->post("{$this->authServiceUrl}/api/auth/login", $request->all());
+        $response = $this->authProxyService->login($request);
 
         return response()->json(
             $response->json(),
@@ -60,15 +56,12 @@ class AuthProxyController extends Controller
      *
      * Proxies registration request to auth-service.
      *
-     * @param  Request  $request  The HTTP request containing user registration data
+     * @param  RegisterProxyRequest  $request  Validated registration request
      * @return JsonResponse The registration response
      */
-    public function register(Request $request): JsonResponse
+    public function register(RegisterProxyRequest $request): JsonResponse
     {
-        $response = Http::withHeaders([
-            'Content-Type' => 'application/json',
-            'Accept' => 'application/json',
-        ])->post("{$this->authServiceUrl}/api/auth/register", $request->all());
+        $response = $this->authProxyService->register($request);
 
         return response()->json(
             $response->json(),
@@ -81,16 +74,12 @@ class AuthProxyController extends Controller
      *
      * Proxies token refresh request to auth-service using the refresh token.
      *
-     * @param  Request  $request  The HTTP request with Authorization header
+     * @param  RefreshTokenProxyRequest  $request  Validated refresh token request
      * @return JsonResponse The new token pair
      */
-    public function refresh(Request $request): JsonResponse
+    public function refresh(RefreshTokenProxyRequest $request): JsonResponse
     {
-        $response = Http::withHeaders([
-            'Content-Type' => 'application/json',
-            'Accept' => 'application/json',
-            'Authorization' => $request->header('Authorization'),
-        ])->post("{$this->authServiceUrl}/api/auth/refresh");
+        $response = $this->authProxyService->refreshToken($request);
 
         return response()->json(
             $response->json(),
@@ -108,13 +97,7 @@ class AuthProxyController extends Controller
      */
     public function logout(Request $request): JsonResponse
     {
-        $response = Http::withHeaders([
-            'Content-Type' => 'application/json',
-            'Accept' => 'application/json',
-            'Authorization' => $request->header('Authorization'),
-            'X-User-ID' => $request->header('X-User-ID'),
-            'X-User-Role' => $request->header('X-User-Role'),
-        ])->post("{$this->authServiceUrl}/api/auth/logout");
+        $response = $this->authProxyService->logout($request);
 
         return response()->json(
             $response->json(),
@@ -127,18 +110,12 @@ class AuthProxyController extends Controller
      *
      * Proxies user info request to auth-service with user context.
      *
-     * @param Request $request The HTTP request with Authorization header and user context
+     * @param  Request  $request  The HTTP request with Authorization header and user context
      * @return JsonResponse The user data
      */
     public function me(Request $request): JsonResponse
     {
-        $response = Http::withHeaders([
-            'Content-Type' => 'application/json',
-            'Accept' => 'application/json',
-            'Authorization' => $request->header('Authorization'),
-            'X-User-ID' => $request->header('X-User-ID'),
-            'X-User-Role' => $request->header('X-User-Role'),
-        ])->get("{$this->authServiceUrl}/api/auth/me");
+        $response = $this->authProxyService->getUserInfo($request);
 
         return response()->json(
             $response->json(),
@@ -162,103 +139,16 @@ class AuthProxyController extends Controller
      * - page: Page number
      * - per_page: Items per page (max 100)
      *
-     * @param Request $request The HTTP request with Authorization header and query params
+     * @param  Request  $request  The HTTP request with Authorization header and query params
      * @return JsonResponse The unified audit logs data
      */
     public function auditLogs(Request $request): JsonResponse
     {
-        $type = $request->input('type', 'all');
-        $perPage = min($request->input('per_page', 50), 100);
-        $page = $request->input('page', 1);
+        $result = $this->authProxyService->getUnifiedAuditLogs($request);
 
-        $authLogs = [];
-        $ipLogs = [];
-        $authCount = 0;
-        $ipCount = 0;
-
-        // Fetch authentication logs from auth-service
-        if ($type === 'auth' || $type === 'all') {
-            $authResponse = Http::withHeaders([
-                'Content-Type' => 'application/json',
-                'Accept' => 'application/json',
-                'Authorization' => $request->header('Authorization'),
-                'X-User-ID' => $request->header('X-User-ID'),
-                'X-User-Role' => $request->header('X-User-Role'),
-            ])->get("{$this->authServiceUrl}/api/audit/logs", [
-                'event_type' => $request->input('event_type'),
-                'user_id' => $request->input('user_id'),
-                'entity_type' => $request->input('entity_type'),
-                'from' => $request->input('from'),
-                'to' => $request->input('to'),
-                'per_page' => $perPage,
-                'page' => $page,
-            ]);
-
-            if ($authResponse->successful()) {
-                $authData = $authResponse->json();
-                $authLogs = $authData['data'] ?? [];
-                $authCount = $authData['meta']['total'] ?? count($authLogs);
-
-                // Add type field to auth logs
-                $authLogs = array_map(function ($log) {
-                    $log['type'] = 'auth';
-                    return $log;
-                }, $authLogs);
-            }
-        }
-
-        // Fetch IP activities from ip-management service
-        if ($type === 'ip' || $type === 'all') {
-            $ipResponse = Http::withHeaders([
-                'Content-Type' => 'application/json',
-                'Accept' => 'application/json',
-                'Authorization' => $request->header('Authorization'),
-                'X-User-ID' => $request->header('X-User-ID'),
-                'X-User-Role' => $request->header('X-User-Role'),
-            ])->get("{$this->ipServiceUrl}/api/activity/logs", [
-                'event' => $request->input('event_type'),
-                'user_id' => $request->input('user_id'),
-                'subject_type' => $request->input('entity_type'),
-                'from' => $request->input('from'),
-                'to' => $request->input('to'),
-                'per_page' => $perPage,
-                'page' => $page,
-            ]);
-
-            if ($ipResponse->successful()) {
-                $ipData = $ipResponse->json();
-                $ipLogs = $ipData['data'] ?? [];
-                $ipCount = $ipData['meta']['total'] ?? count($ipLogs);
-            }
-        }
-
-        // Merge logs and sort by created_at (newest first)
-        $allLogs = array_merge($authLogs, $ipLogs);
-        usort($allLogs, function ($a, $b) {
-            $dateA = strtotime($a['created_at'] ?? 0);
-            $dateB = strtotime($b['created_at'] ?? 0);
-            return $dateB - $dateA;
-        });
-
-        // Calculate totals based on type filter
-        $total = match ($type) {
-            'auth' => $authCount,
-            'ip' => $ipCount,
-            default => $authCount + $ipCount,
-        };
-
-        return response()->json([
-            'success' => true,
-            'data' => $allLogs,
-            'meta' => [
-                'current_page' => $page,
-                'per_page' => $perPage,
-                'total' => $total,
-                'auth_count' => $authCount,
-                'ip_count' => $ipCount,
-                'type' => $type,
-            ],
-        ]);
+        return response()->json(
+            new UnifiedAuditLogCollection($result['data'], $result['meta'])
+        );
     }
 
     /**
@@ -266,18 +156,12 @@ class AuthProxyController extends Controller
      *
      * Proxies activity log request to ip-management service.
      *
-     * @param Request $request The HTTP request with Authorization header and query params
+     * @param  Request  $request  The HTTP request with Authorization header and query params
      * @return JsonResponse The IP activity logs data
      */
     public function ipActivities(Request $request): JsonResponse
     {
-        $response = Http::withHeaders([
-            'Content-Type' => 'application/json',
-            'Accept' => 'application/json',
-            'Authorization' => $request->header('Authorization'),
-            'X-User-ID' => $request->header('X-User-ID'),
-            'X-User-Role' => $request->header('X-User-Role'),
-        ])->get("{$this->ipServiceUrl}/api/activity/logs", $request->query());
+        $response = $this->authProxyService->getIPActivities($request);
 
         return response()->json(
             $response->json(),

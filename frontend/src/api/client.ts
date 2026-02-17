@@ -23,10 +23,16 @@ interface ExtendedAxiosRequestConfig extends InternalAxiosRequestConfig {
 const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
 
 /**
+ * Request timeout in milliseconds (10 seconds)
+ */
+const REQUEST_TIMEOUT = 10000
+
+/**
  * Axios instance with default configuration
  */
 const api = axios.create({
   baseURL,
+  timeout: REQUEST_TIMEOUT,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -90,7 +96,12 @@ api.interceptors.response.use(
           }
         )
 
-        const { access_token, refresh_token } = response.data.data
+        const tokenData = response.data.data
+        if (!tokenData) {
+          throw new Error('No token data in refresh response')
+        }
+
+        const { access_token, refresh_token } = tokenData
 
         // Store new tokens
         localStorage.setItem('access_token', access_token)

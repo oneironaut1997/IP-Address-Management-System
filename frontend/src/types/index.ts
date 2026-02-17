@@ -218,6 +218,25 @@ export interface APIResponse<T> {
     timestamp: string
     /** Request ID for tracing */
     request_id?: string
+    /** Current page number (for paginated responses) */
+    current_page?: number
+    /** Items per page (for paginated responses) */
+    per_page?: number
+    /** Total items (for paginated responses) */
+    total?: number
+    /** Last page number (for paginated responses) */
+    last_page?: number
+    /** First item index on page */
+    from?: number | null
+    /** Last item index on page */
+    to?: number | null
+  }
+  /** Pagination links (for paginated responses) */
+  links?: {
+    first: string | null
+    last: string | null
+    prev: string | null
+    next: string | null
   }
 }
 

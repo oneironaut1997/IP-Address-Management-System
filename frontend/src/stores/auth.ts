@@ -9,8 +9,50 @@
 
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
+import axios, { AxiosError } from 'axios'
 import api, { setAuthTokens, clearAuthTokens } from '@/api/client'
-import type { User, LoginCredentials, RegistrationData, AuthResponse, APIResponse } from '@/types'
+import type { User, LoginCredentials, RegistrationData, AuthResponse, APIResponse, APIError } from '@/types'
+
+/**
+ * Extract user-friendly error message from API errors
+ *
+ * @param err - The caught error
+ * @param defaultMessage - Default message if no specific error found
+ * @returns User-friendly error message
+ */
+function extractErrorMessage(err: unknown, defaultMessage: string): string {
+  if (axios.isAxiosError(err)) {
+    const apiError = err.response?.data?.error as APIError | undefined
+    if (apiError?.message) {
+      return apiError.message
+    }
+    if (apiError?.code) {
+      // Map common error codes to user-friendly messages
+      const errorMessages: Record<string, string> = {
+        'INVALID_CREDENTIALS': 'Invalid email or password. Please try again.',
+        'USER_NOT_FOUND': 'User account not found.',
+        'TOKEN_EXPIRED': 'Your session has expired. Please log in again.',
+        'TOKEN_INVALID': 'Invalid authentication token.',
+        'UNAUTHORIZED': 'You are not authorized to perform this action.',
+        'VALIDATION_ERROR': 'Please check your input and try again.',
+      }
+      return errorMessages[apiError.code] || apiError.code
+    }
+    if (err.code === 'ECONNABORTED') {
+      return 'Request timed out. Please check your connection and try again.'
+    }
+    if (!err.response) {
+      return 'Network error. Please check your connection and try again.'
+    }
+    if (err.response.status >= 500) {
+      return 'Server error. Please try again later.'
+    }
+  }
+  if (err instanceof Error) {
+    return err.message
+  }
+  return defaultMessage
+}
 
 /**
  * Auth Store
@@ -46,13 +88,17 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const { data } = await api.post<APIResponse<AuthResponse>>('/auth/login', credentials)
 
+      if (!data.data) {
+        throw new Error('No authentication data received')
+      }
+
       // Store tokens
       setAuthTokens(data.data.access_token, data.data.refresh_token)
 
       // Fetch user info
       await fetchUser()
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Login failed'
+      const message = extractErrorMessage(err, 'Login failed. Please try again.')
       error.value = message
       throw new Error(message)
     } finally {
@@ -66,14 +112,14 @@ export const useAuthStore = defineStore('auth', () => {
    * @param data - Registration data
    * @throws Error on registration failure
    */
-  async function register(data: RegistrationData): Promise<void> {
+  async function register(registrationData: RegistrationData): Promise<void> {
     loading.value = true
     error.value = null
 
     try {
-      await api.post('/auth/register', data)
+      await api.post('/auth/register', registrationData)
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Registration failed'
+      const message = extractErrorMessage(err, 'Registration failed. Please try again.')
       error.value = message
       throw new Error(message)
     } finally {
@@ -88,7 +134,12 @@ export const useAuthStore = defineStore('auth', () => {
    */
   async function fetchUser(): Promise<void> {
     try {
-      const { data } = await api.get<APIResponse<User>>('/auth/me')
+      const { data } = await api.get<APIResponse<{ user: User }>>('/auth/me')
+      
+      if (!data.data?.user) {
+        throw new Error('No user data received')
+      }
+      
       user.value = data.data.user
       // Persist user to localStorage for persistence across reloads
       localStorage.setItem('user', JSON.stringify(data.data.user))
@@ -107,7 +158,10 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       await api.post('/auth/logout')
     } catch (err) {
-      console.error(err);
+      // Log error but don't throw - we still want to clear local state
+      if (axios.isAxiosError(err)) {
+        console.error('Logout API error:', err.message)
+      }
     } finally {
       clearAuthState()
     }

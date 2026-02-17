@@ -15,10 +15,19 @@ use Illuminate\Support\Facades\Route;
  |
  */
 
-// IP Management Routes
-// Note: Authentication is handled by the Gateway service
-// X-User-ID and X-User-Role headers are passed from Gateway
-Route::middleware('api')->group(function () {
+/*
+|--------------------------------------------------------------------------
+| Protected Routes (Gateway Auth Required)
+|--------------------------------------------------------------------------
+|
+| These routes require valid gateway headers (X-User-ID, X-User-Role).
+| The gateway.auth middleware validates the headers and sets up the
+| user context for policy-based authorization.
+|
+*/
+
+Route::middleware(['api', 'gateway.auth'])->group(function () {
+    // IP Management Routes
     Route::apiResource('ip', IPController::class);
     Route::get('ip/{ip}/history', [IPController::class, 'history']);
 

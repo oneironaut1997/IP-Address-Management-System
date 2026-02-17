@@ -2,78 +2,163 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreIPProxyRequest;
+use App\Http\Requests\UpdateIPProxyRequest;
+use App\Http\Resources\ProxyResponseResource;
+use App\Services\IPProxyService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Http;
 
 /**
  * IP Proxy Controller
  *
  * Proxies IP management requests to the ip-management service.
  * Handles all HTTP methods for IP CRUD operations and audit logs.
+ *
+ * Responsibilities:
+ * - Request validation (via Form Requests)
+ * - HTTP response formatting
+ * - Delegating proxy logic to service layer
  */
 class IPProxyController extends Controller
 {
     /**
-     * IP service base URL
+     * @param IPProxyService $ipProxyService The IP proxy service
      */
-    protected string $ipServiceUrl;
+    public function __construct(
+        protected IPProxyService $ipProxyService
+    ) {}
 
     /**
-     * Constructor
+     * Display a paginated listing of IP addresses.
+     *
+     * @param  Request  $request  The HTTP request
+     * @return JsonResponse
      */
-    public function __construct()
+    public function index(Request $request): JsonResponse
     {
-        $this->ipServiceUrl = 'http://ip-management:8000';
+        $response = $this->ipProxyService->getAllIPAddresses($request);
+
+        return response()->json(
+            $response->json(),
+            $response->status()
+        );
     }
 
     /**
-     * Handle all IP service requests
+     * Store a newly created IP address.
+     *
+     * @param  StoreIPProxyRequest  $request  Validated store request
+     * @return JsonResponse
+     */
+    public function store(StoreIPProxyRequest $request): JsonResponse
+    {
+        $response = $this->ipProxyService->createIPAddress($request);
+
+        return response()->json(
+            $response->json(),
+            $response->status()
+        );
+    }
+
+    /**
+     * Display the specified IP address.
+     *
+     * @param  string  $id  The IP address ID
+     * @param  Request  $request  The HTTP request
+     * @return JsonResponse
+     */
+    public function show(string $id, Request $request): JsonResponse
+    {
+        $response = $this->ipProxyService->getIPAddress($id, $request);
+
+        return response()->json(
+            $response->json(),
+            $response->status()
+        );
+    }
+
+    /**
+     * Update the specified IP address.
+     *
+     * @param  UpdateIPProxyRequest  $request  Validated update request
+     * @param  string  $id  The IP address ID
+     * @return JsonResponse
+     */
+    public function update(UpdateIPProxyRequest $request, string $id): JsonResponse
+    {
+        $response = $this->ipProxyService->updateIPAddress($id, $request);
+
+        return response()->json(
+            $response->json(),
+            $response->status()
+        );
+    }
+
+    /**
+     * Remove the specified IP address.
+     *
+     * @param  string  $id  The IP address ID
+     * @param  Request  $request  The HTTP request
+     * @return JsonResponse
+     */
+    public function destroy(string $id, Request $request): JsonResponse
+    {
+        $response = $this->ipProxyService->deleteIPAddress($id, $request);
+
+        return response()->json(
+            $response->json(),
+            $response->status()
+        );
+    }
+
+    /**
+     * Get the change history for a specific IP address.
+     *
+     * @param  string  $id  The IP address ID
+     * @param  Request  $request  The HTTP request
+     * @return JsonResponse
+     */
+    public function history(string $id, Request $request): JsonResponse
+    {
+        $response = $this->ipProxyService->getIPAddressHistory($id, $request);
+
+        return response()->json(
+            $response->json(),
+            $response->status()
+        );
+    }
+
+    /**
+     * Handle all IP service requests (wildcard route).
      *
      * Generic handler that proxies any HTTP method to the IP service.
      * Supports wildcard paths for nested resources.
      *
      * @param  Request  $request  The HTTP request
      * @param  string|null  $path  The path to proxy (optional, supports wildcards)
-     * @return Response|JsonResponse The proxied response
+     * @return JsonResponse The proxied response
      */
-    public function handle(Request $request, ?string $path = null): Response|JsonResponse
+    public function handle(Request $request, ?string $path = null): JsonResponse
     {
         $method = strtolower($request->getMethod());
-        $url = $this->buildUrl($path);
 
-        // Prepare headers to forward
-        $headers = [
-            'Content-Type' => 'application/json',
-            'Accept' => 'application/json',
-            'Authorization' => $request->header('Authorization'),
-            'X-User-ID' => $request->header('X-User-ID'),
-            'X-User-Role' => $request->header('X-User-Role'),
-        ];
-
-        // Filter out null headers
-        $headers = array_filter($headers, fn ($value) => $value !== null);
-
-        // Build the HTTP request
-        $httpRequest = Http::withHeaders($headers);
-
-        // Execute the appropriate HTTP method
         try {
-            $response = match ($method) {
-                'get' => $httpRequest->get($url, $request->query()),
-                'post' => $httpRequest->post($url, $request->all()),
-                'put' => $httpRequest->put($url, $request->all()),
-                'patch' => $httpRequest->patch($url, $request->all()),
-                'delete' => $httpRequest->delete($url, $request->all()),
-                default => throw new \InvalidArgumentException("Unsupported HTTP method: {$method}"),
-            };
+            $response = $this->ipProxyService->proxyRequest($method, $request, $path);
 
-            // Return response with the same status code
             return response()->json(
                 $response->json() ?? [],
                 $response->status()
             );
+        } catch (\InvalidArgumentException $e) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'INVALID_METHOD',
+                    'message' => $e->getMessage(),
+                ],
+            ], Response::HTTP_METHOD_NOT_ALLOWED);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -82,27 +167,7 @@ class IPProxyController extends Controller
                     'message' => 'Failed to proxy request to IP service',
                     'details' => $e->getMessage(),
                 ],
-            ], 502);
+            ], Response::HTTP_BAD_GATEWAY);
         }
-    }
-
-    /**
-     * Build the target URL for the IP service
-     *
-     * @param  string|null  $path  The path segment
-     * @return string The complete URL
-     */
-    protected function buildUrl(?string $path = null): string
-    {
-        $baseUrl = "{$this->ipServiceUrl}/api/ip";
-
-        if ($path) {
-            // Ensure path doesn't start with a slash to avoid double slashes
-            $path = ltrim($path, '/');
-
-            return "{$baseUrl}/{$path}";
-        }
-
-        return $baseUrl;
     }
 }

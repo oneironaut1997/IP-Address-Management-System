@@ -45,10 +45,14 @@ Route::middleware('jwt')->group(function () {
     // Audit log routes
     Route::get('audit/logs', [AuthProxyController::class, 'auditLogs']);
 
-    // IP Management Service Routes
-    // Wildcard route proxies all IP-related requests to the IP service
-    Route::any('ip/{path?}', [IPProxyController::class, 'handle'])
-        ->where('path', '.*');
+    // IP Management Service Routes - RESTful endpoints
+    Route::get('ip', [IPProxyController::class, 'index']);
+    Route::post('ip', [IPProxyController::class, 'store']);
+    Route::get('ip/{id}', [IPProxyController::class, 'show']);
+    Route::put('ip/{id}', [IPProxyController::class, 'update']);
+    Route::patch('ip/{id}', [IPProxyController::class, 'update']);
+    Route::delete('ip/{id}', [IPProxyController::class, 'destroy']);
+    Route::get('ip/{id}/history', [IPProxyController::class, 'history']);
 });
 
 /*

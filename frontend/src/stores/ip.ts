@@ -13,6 +13,18 @@ import api from '@/api/client'
 import type { IPAddress, IPHistory, IPFormData, APIResponse } from '@/types'
 
 /**
+ * Pagination metadata from API response
+ */
+interface PaginationMeta {
+  current_page: number
+  per_page: number
+  total: number
+  last_page: number
+  from: number | null
+  to: number | null
+}
+
+/**
  * IP Store
  *
  * Manages IP address state including:
@@ -20,6 +32,7 @@ import type { IPAddress, IPHistory, IPFormData, APIResponse } from '@/types'
  * - Currently selected IP
  * - IP change history
  * - CRUD operations
+ * - Pagination support
  */
 export const useIPStore = defineStore('ip', () => {
   // State
@@ -28,26 +41,53 @@ export const useIPStore = defineStore('ip', () => {
   const history = ref<IPHistory[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
+  const pagination = ref<PaginationMeta>({
+    current_page: 1,
+    per_page: 20,
+    total: 0,
+    last_page: 1,
+    from: null,
+    to: null,
+  })
 
   // Getters (Computed)
   const ipv4Addresses = computed(() => ips.value.filter((ip) => ip.type === 'ipv4'))
   const ipv6Addresses = computed(() => ips.value.filter((ip) => ip.type === 'ipv6'))
-  const totalCount = computed(() => ips.value.length)
+  const totalCount = computed(() => pagination.value.total)
 
   // Actions
 
   /**
-   * Fetch all IP addresses
+   * Fetch IP addresses with pagination
    *
+   * @param page - Page number (default: 1)
+   * @param perPage - Items per page (default: 20, max: 100)
    * @throws Error on fetch failure
    */
-  async function fetchIPs(): Promise<void> {
+  async function fetchIPs(page = 1, perPage = 20): Promise<void> {
     loading.value = true
     error.value = null
 
     try {
-      const { data } = await api.get<APIResponse<IPAddress[]>>('/ip')
+      const { data } = await api.get<APIResponse<IPAddress[]>>('/ip', {
+        params: {
+          page,
+          per_page: Math.min(Math.max(perPage, 1), 100),
+        },
+      })
       ips.value = data.data ?? []
+      
+      // Update pagination metadata if available
+      if (data.meta) {
+        pagination.value = {
+          current_page: data.meta.current_page ?? 1,
+          per_page: data.meta.per_page ?? 20,
+          total: data.meta.total ?? 0,
+          last_page: data.meta.last_page ?? 1,
+          from: data.meta.from ?? null,
+          to: data.meta.to ?? null,
+        }
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to fetch IPs'
       error.value = message
@@ -182,6 +222,7 @@ export const useIPStore = defineStore('ip', () => {
     history,
     loading,
     error,
+    pagination,
     // Getters
     ipv4Addresses,
     ipv6Addresses,

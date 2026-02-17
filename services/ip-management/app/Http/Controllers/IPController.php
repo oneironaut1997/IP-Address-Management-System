@@ -4,9 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreIPRequest;
 use App\Http\Requests\UpdateIPRequest;
+use App\Http\Resources\IPAddressCollection;
 use App\Http\Resources\IPAddressResource;
-use App\Http\Resources\IPHistoryCollection;
-use App\Http\Resources\IPHistoryResource;
 use App\Models\IPAddress;
 use App\Services\IPService;
 use Illuminate\Http\JsonResponse;
@@ -22,7 +21,7 @@ use Illuminate\Http\Response;
  *
  * Responsibilities:
  * - Request validation (via Form Requests)
- * - Authorization checks
+ * - Authorization checks (via Policies)
  * - HTTP response formatting
  * - Delegating business logic to service layer
  */
@@ -36,21 +35,22 @@ class IPController extends Controller
     ) {}
 
     /**
-     * Display a listing of all IP addresses.
+     * Display a paginated listing of IP addresses.
      *
      * All authenticated users can view all IP addresses.
+     * Supports pagination via 'per_page' query parameter (default: 20, max: 100).
      *
      * @param  Request  $request  The HTTP request
      * @return JsonResponse
      */
     public function index(Request $request): JsonResponse
     {
-        $ips = $this->ipService->getAllIPAddresses();
+        $perPage = (int) $request->input('per_page', 20);
+        $ips = $this->ipService->getAllIPAddresses($perPage);
 
-        return response()->json([
-            'success' => true,
-            'data' => IPAddressResource::collection($ips),
-        ]);
+        return response()->json(
+            new IPAddressCollection($ips)
+        );
     }
 
     /**
@@ -132,20 +132,10 @@ class IPController extends Controller
             ], Response::HTTP_NOT_FOUND);
         }
 
-        // Authorization check
+        // Authorization check using policy
+        $this->authorize('update', $ipAddress);
+
         $userId = $request->header('X-User-ID');
-        $userRole = $request->header('X-User-Role');
-
-        if (! $this->ipService->canUpdate($ipAddress, $userId, $userRole)) {
-            return response()->json([
-                'success' => false,
-                'error' => [
-                    'code' => 'FORBIDDEN',
-                    'message' => 'You do not have permission to update this IP address.',
-                ],
-            ], Response::HTTP_FORBIDDEN);
-        }
-
         $updatedIp = $this->ipService->updateIPAddress($ipAddress, $request->validated(), $userId);
 
         return response()->json([
@@ -179,20 +169,10 @@ class IPController extends Controller
             ], Response::HTTP_NOT_FOUND);
         }
 
-        // Authorization check - only super_admin can delete
+        // Authorization check using policy
+        $this->authorize('delete', $ipAddress);
+
         $userId = $request->header('X-User-ID');
-        $userRole = $request->header('X-User-Role');
-
-        if (! $this->ipService->canDelete($userRole)) {
-            return response()->json([
-                'success' => false,
-                'error' => [
-                    'code' => 'FORBIDDEN',
-                    'message' => 'Only super administrators can delete IP addresses.',
-                ],
-            ], Response::HTTP_FORBIDDEN);
-        }
-
         $this->ipService->deleteIPAddress($ipAddress, $userId);
 
         return response()->json([
@@ -225,7 +205,7 @@ class IPController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => IPHistoryResource::collection($history),
+            'data' => $history,
         ]);
     }
 }

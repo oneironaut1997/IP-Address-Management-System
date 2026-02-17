@@ -3,14 +3,14 @@
 namespace App\Listeners;
 
 use App\Events\UserLoggedOut;
-use App\Models\AuditLog;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 
 /**
  * Class LogUserLogout
  *
- * Listener for UserLoggedOut event that creates an audit log entry.
+ * Listener for UserLoggedOut event that creates an activity log entry.
+ * Uses Spatie Activity Log for consistent audit logging across services.
  */
 class LogUserLogout implements ShouldQueue
 {
@@ -19,21 +19,23 @@ class LogUserLogout implements ShouldQueue
     /**
      * Handle the event.
      *
-     * Creates an immutable audit log entry for the logout event.
+     * Creates an activity log entry for the logout event using Spatie Activity Log.
      */
     public function handle(UserLoggedOut $event): void
     {
         $user = $event->user;
 
-        AuditLog::create([
-            'user_id' => $user->id,
-            'event_type' => 'logout',
-            'entity_type' => 'User',
-            'entity_id' => $user->id,
-            'metadata' => [
+        // Log activity using Spatie Activity Log
+        activity()
+            ->performedOn($user)
+            ->event('auth.logout')
+            ->withProperties([
                 'timestamp' => now()->toIso8601String(),
-            ],
-            'session_id' => null,
-        ]);
+            ])
+            ->tap(function ($activity) use ($user) {
+                $activity->causer_id = $user->id;
+                $activity->causer_type = null;
+            })
+            ->log('User logged out successfully');
     }
 }

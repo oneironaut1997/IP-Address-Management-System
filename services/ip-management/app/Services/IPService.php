@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\IPAddress;
 use App\Models\IPHistory;
-use Illuminate\Http\Response;
 use PhpIP\IP;
 
 /**
@@ -15,19 +14,28 @@ use PhpIP\IP;
  *
  * This service encapsulates all IP management business rules and separates
  * them from HTTP concerns in the controller layer.
+ *
+ * Note: Authorization is handled by IPAddressPolicy, not this service.
  */
 class IPService
 {
     /**
-     * Get all IP addresses with their history.
+     * Get all IP addresses with pagination.
      *
-     * @return \Illuminate\Database\Eloquent\Collection
+     * Uses pagination to prevent memory issues with large datasets.
+     * Eager loads history relationship for N+1 query prevention.
+     *
+     * @param  int  $perPage  Number of items per page (default: 20, max: 100)
+     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
      */
-    public function getAllIPAddresses()
+    public function getAllIPAddresses(int $perPage = 20)
     {
+        // Clamp perPage to reasonable bounds
+        $perPage = min(max($perPage, 1), 100);
+
         return IPAddress::with('history')
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->paginate($perPage);
     }
 
     /**
@@ -195,29 +203,5 @@ class IPService
         return IPHistory::where('ip_address_id', $id)
             ->orderBy('created_at', 'desc')
             ->get();
-    }
-
-    /**
-     * Check if a user can update an IP address.
-     *
-     * @param  IPAddress  $ipAddress  The IP address to check
-     * @param  string  $userId  The user ID
-     * @param  string  $userRole  The user's role
-     * @return bool
-     */
-    public function canUpdate(IPAddress $ipAddress, string $userId, string $userRole): bool
-    {
-        return $ipAddress->user_id === $userId || $userRole === 'super_admin';
-    }
-
-    /**
-     * Check if a user can delete an IP address.
-     *
-     * @param  string  $userRole  The user's role
-     * @return bool
-     */
-    public function canDelete(string $userRole): bool
-    {
-        return $userRole === 'super_admin';
     }
 }

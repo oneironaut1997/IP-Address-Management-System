@@ -10,6 +10,7 @@ use App\Http\Resources\UserResource;
 use App\Services\AuthService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 /**
@@ -52,7 +53,7 @@ class AuthController extends Controller
                 'tokens' => null,
                 'message' => 'User registered successfully',
             ]),
-            201
+            Response::HTTP_CREATED
         );
     }
 
@@ -78,7 +79,7 @@ class AuthController extends Controller
                     'code' => $result['error'],
                     'message' => 'The provided credentials are incorrect.',
                 ],
-            ], 401);
+            ], Response::HTTP_UNAUTHORIZED);
         }
 
         return response()->json(
@@ -141,7 +142,7 @@ class AuthController extends Controller
                     'code' => 'REFRESH_TOKEN_REQUIRED',
                     'message' => 'Refresh token is required.',
                 ],
-            ], 401);
+            ], Response::HTTP_UNAUTHORIZED);
         }
 
         $result = $this->authService->refreshToken($refreshToken);
@@ -150,7 +151,7 @@ class AuthController extends Controller
             return response()->json([
                 'success' => false,
                 'error' => $result['error'],
-            ], 401);
+            ], Response::HTTP_UNAUTHORIZED);
         }
 
         return response()->json([

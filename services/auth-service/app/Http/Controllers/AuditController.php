@@ -2,23 +2,38 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\AuditLog;
+use App\Http\Resources\ActivityLogResource;
+use App\Services\AuditService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 /**
  * Class AuditController
  *
- * Handles audit log retrieval for compliance and security analysis.
- * Provides endpoints to fetch authentication event audit trails.
+ * HTTP Controller for audit log endpoints.
+ * Delegates business logic to AuditService and uses API Resources
+ * for consistent response formatting.
+ *
+ * Responsibilities:
+ * - Request validation
+ * - HTTP response formatting
+ * - Delegating business logic to service layer
  */
 class AuditController extends Controller
 {
     /**
+     * @param AuditService $auditService The audit service
+     */
+    public function __construct(
+        protected AuditService $auditService
+    ) {}
+
+    /**
      * Get all audit logs with optional filtering.
      *
      * Retrieves audit logs with related user information.
-     * Supports filtering by event_type and user_id.
+     * Supports filtering by event, user_id, and date range.
      * Results are ordered by creation date (newest first).
      *
      * @param  Request  $request  The HTTP request with optional filters
@@ -26,31 +41,13 @@ class AuditController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = AuditLog::with('user');
-
-        // Apply filters if provided
-        if ($request->has('event_type')) {
-            $query->where('event_type', $request->input('event_type'));
-        }
-
-        if ($request->has('user_id')) {
-            $query->where('user_id', $request->input('user_id'));
-        }
-
-        if ($request->has('entity_type')) {
-            $query->where('entity_type', $request->input('entity_type'));
-        }
-
-        // Order by newest first
-        $query->orderBy('created_at', 'desc');
-
-        // Paginate results (default 50 per page, max 100)
-        $perPage = min($request->input('per_page', 50), 100);
-        $logs = $query->paginate($perPage);
+        $filters = $this->auditService->buildFilters($request->all());
+        $perPage = (int) $request->input('per_page', 50);
+        $logs = $this->auditService->getAuditLogs($filters, $perPage);
 
         return response()->json([
             'success' => true,
-            'data' => $logs->items(),
+            'data' => ActivityLogResource::collection($logs->items()),
             'meta' => [
                 'current_page' => $logs->currentPage(),
                 'last_page' => $logs->lastPage(),
@@ -68,11 +65,21 @@ class AuditController extends Controller
      */
     public function show(string $id): JsonResponse
     {
-        $log = AuditLog::with('user')->findOrFail($id);
+        $log = $this->auditService->getAuditLogById($id);
+
+        if (!$log) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'NOT_FOUND',
+                    'message' => 'Audit log not found.',
+                ],
+            ], Response::HTTP_NOT_FOUND);
+        }
 
         return response()->json([
             'success' => true,
-            'data' => $log,
+            'data' => new ActivityLogResource($log),
         ]);
     }
 
@@ -85,9 +92,7 @@ class AuditController extends Controller
      */
     public function eventTypes(): JsonResponse
     {
-        $types = AuditLog::distinct()
-            ->orderBy('event_type')
-            ->pluck('event_type');
+        $types = $this->auditService->getEventTypes();
 
         return response()->json([
             'success' => true,

@@ -3,6 +3,8 @@
 namespace App\Policies;
 
 use App\Models\IPAddress;
+use App\Models\User;
+use Illuminate\Auth\Access\HandlesAuthorization;
 
 /**
  * Class IPAddressPolicy
@@ -15,12 +17,17 @@ use App\Models\IPAddress;
  */
 class IPAddressPolicy
 {
+    use HandlesAuthorization;
+
     /**
      * Determine whether the user can view any IP addresses.
      *
      * All authenticated users can view all IP addresses.
+     *
+     * @param  User  $user
+     * @return bool
      */
-    public function viewAny(string $userId): bool
+    public function viewAny(User $user): bool
     {
         return true;
     }
@@ -29,8 +36,12 @@ class IPAddressPolicy
      * Determine whether the user can view the IP address.
      *
      * All authenticated users can view any IP address.
+     *
+     * @param  User  $user
+     * @param  IPAddress  $ipAddress
+     * @return bool
      */
-    public function view(string $userId, IPAddress $ipAddress): bool
+    public function view(User $user, IPAddress $ipAddress): bool
     {
         return true;
     }
@@ -39,8 +50,11 @@ class IPAddressPolicy
      * Determine whether the user can create IP addresses.
      *
      * All authenticated users can create IP addresses.
+     *
+     * @param  User  $user
+     * @return bool
      */
-    public function create(string $userId): bool
+    public function create(User $user): bool
     {
         return true;
     }
@@ -49,16 +63,20 @@ class IPAddressPolicy
      * Determine whether the user can update the IP address.
      *
      * Only the owner or super_admin can update an IP address.
+     *
+     * @param  User  $user
+     * @param  IPAddress  $ipAddress
+     * @return bool
      */
-    public function update(string $userId, IPAddress $ipAddress, ?string $userRole = null): bool
+    public function update(User $user, IPAddress $ipAddress): bool
     {
         // Owner can update their own IP
-        if ($ipAddress->user_id === $userId) {
+        if ($ipAddress->user_id === $user->id) {
             return true;
         }
 
         // Super admin can update any IP
-        if ($userRole === 'super_admin') {
+        if ($user->role === 'super_admin') {
             return true;
         }
 
@@ -69,32 +87,44 @@ class IPAddressPolicy
      * Determine whether the user can delete the IP address.
      *
      * Only super_admin can delete IP addresses.
+     *
+     * @param  User  $user
+     * @param  IPAddress  $ipAddress
+     * @return bool
      */
-    public function delete(string $userId, IPAddress $ipAddress, ?string $userRole = null): bool
+    public function delete(User $user, IPAddress $ipAddress): bool
     {
         // Only super admin can delete
-        return $userRole === 'super_admin';
+        return $user->role === 'super_admin';
     }
 
     /**
      * Determine whether the user can restore the IP address.
      *
      * Only super_admin can restore deleted IP addresses.
+     *
+     * @param  User  $user
+     * @param  IPAddress  $ipAddress
+     * @return bool
      */
-    public function restore(string $userId, IPAddress $ipAddress, ?string $userRole = null): bool
+    public function restore(User $user, IPAddress $ipAddress): bool
     {
         // Only super admin can restore
-        return $userRole === 'super_admin';
+        return $user->role === 'super_admin';
     }
 
     /**
      * Determine whether the user can permanently delete the IP address.
      *
      * Only super_admin can force delete IP addresses.
+     *
+     * @param  User  $user
+     * @param  IPAddress  $ipAddress
+     * @return bool
      */
-    public function forceDelete(string $userId, IPAddress $ipAddress, ?string $userRole = null): bool
+    public function forceDelete(User $user, IPAddress $ipAddress): bool
     {
         // Only super admin can force delete
-        return $userRole === 'super_admin';
+        return $user->role === 'super_admin';
     }
 }
