@@ -23,9 +23,6 @@ class IPAddressPolicy
      * Determine whether the user can view any IP addresses.
      *
      * All authenticated users can view all IP addresses.
-     *
-     * @param  User  $user
-     * @return bool
      */
     public function viewAny(User $user): bool
     {
@@ -36,10 +33,6 @@ class IPAddressPolicy
      * Determine whether the user can view the IP address.
      *
      * All authenticated users can view any IP address.
-     *
-     * @param  User  $user
-     * @param  IPAddress  $ipAddress
-     * @return bool
      */
     public function view(User $user, IPAddress $ipAddress): bool
     {
@@ -50,9 +43,6 @@ class IPAddressPolicy
      * Determine whether the user can create IP addresses.
      *
      * All authenticated users can create IP addresses.
-     *
-     * @param  User  $user
-     * @return bool
      */
     public function create(User $user): bool
     {
@@ -63,10 +53,6 @@ class IPAddressPolicy
      * Determine whether the user can update the IP address.
      *
      * Only the owner or super_admin can update an IP address.
-     *
-     * @param  User  $user
-     * @param  IPAddress  $ipAddress
-     * @return bool
      */
     public function update(User $user, IPAddress $ipAddress): bool
     {
@@ -87,10 +73,6 @@ class IPAddressPolicy
      * Determine whether the user can delete the IP address.
      *
      * Only super_admin can delete IP addresses.
-     *
-     * @param  User  $user
-     * @param  IPAddress  $ipAddress
-     * @return bool
      */
     public function delete(User $user, IPAddress $ipAddress): bool
     {
@@ -102,10 +84,6 @@ class IPAddressPolicy
      * Determine whether the user can restore the IP address.
      *
      * Only super_admin can restore deleted IP addresses.
-     *
-     * @param  User  $user
-     * @param  IPAddress  $ipAddress
-     * @return bool
      */
     public function restore(User $user, IPAddress $ipAddress): bool
     {
@@ -117,10 +95,6 @@ class IPAddressPolicy
      * Determine whether the user can permanently delete the IP address.
      *
      * Only super_admin can force delete IP addresses.
-     *
-     * @param  User  $user
-     * @param  IPAddress  $ipAddress
-     * @return bool
      */
     public function forceDelete(User $user, IPAddress $ipAddress): bool
     {

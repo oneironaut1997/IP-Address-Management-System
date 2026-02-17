@@ -104,7 +104,6 @@ class IPService
      * Get an IP address by ID with its history.
      *
      * @param  string  $id  The IP address ID
-     * @return IPAddress|null
      */
     public function getIPAddressById(string $id): ?IPAddress
     {
@@ -162,7 +161,6 @@ class IPService
      *
      * @param  IPAddress  $ipAddress  The IP address to delete
      * @param  string  $userId  The ID of the user performing the deletion
-     * @return void
      */
     public function deleteIPAddress(IPAddress $ipAddress, string $userId): void
     {
@@ -203,5 +201,43 @@ class IPService
         return IPHistory::where('ip_address_id', $id)
             ->orderBy('created_at', 'desc')
             ->get();
+    }
+
+    /**
+     * Check if a user can update an IP address.
+     *
+     * Owners and super_admins can update IP addresses.
+     *
+     * @param  IPAddress  $ipAddress  The IP address to check
+     * @param  string  $userId  The ID of the user
+     * @param  string  $role  The role of the user
+     * @return bool True if user can update, false otherwise
+     */
+    public function canUpdate(IPAddress $ipAddress, string $userId, string $role): bool
+    {
+        // Owner can update their own IP
+        if ($ipAddress->user_id === $userId) {
+            return true;
+        }
+
+        // Super admin can update any IP
+        if ($role === 'super_admin') {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if a user can delete an IP address.
+     *
+     * Only super_admins can delete IP addresses.
+     *
+     * @param  string  $role  The role of the user
+     * @return bool True if user can delete, false otherwise
+     */
+    public function canDelete(string $role): bool
+    {
+        return $role === 'super_admin';
     }
 }

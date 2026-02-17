@@ -2,9 +2,12 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Events\UserLoggedOut;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Redis;
 use Tests\TestCase;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
@@ -22,6 +25,9 @@ class LogoutTest extends TestCase
      */
     public function test_user_can_logout_and_token_is_invalidated(): void
     {
+        // Fake events to avoid Spatie Activity Log issues
+        Event::fake([UserLoggedOut::class]);
+
         $user = User::create([
             'email' => 'test@example.com',
             'password' => Hash::make('Password123!'),
@@ -29,6 +35,10 @@ class LogoutTest extends TestCase
         ]);
 
         $token = JWTAuth::fromUser($user);
+
+        // Mock Redis for logout
+        Redis::shouldReceive('smembers')->andReturn([]);
+        Redis::shouldReceive('del')->andReturn(1);
 
         $response = $this->postJson('/api/auth/logout', [], [
             'Authorization' => 'Bearer '.$token,

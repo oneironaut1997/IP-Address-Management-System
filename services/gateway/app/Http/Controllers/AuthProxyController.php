@@ -3,9 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\LoginProxyRequest;
-use App\Http\Requests\RegisterProxyRequest;
 use App\Http\Requests\RefreshTokenProxyRequest;
-use App\Http\Resources\ProxyResponseResource;
+use App\Http\Requests\RegisterProxyRequest;
 use App\Http\Resources\UnifiedAuditLogCollection;
 use App\Services\AuthProxyService;
 use Illuminate\Http\JsonResponse;
@@ -27,7 +26,7 @@ use Illuminate\Http\Response;
 class AuthProxyController extends Controller
 {
     /**
-     * @param AuthProxyService $authProxyService The authentication proxy service
+     * @param  AuthProxyService  $authProxyService  The authentication proxy service
      */
     public function __construct(
         protected AuthProxyService $authProxyService

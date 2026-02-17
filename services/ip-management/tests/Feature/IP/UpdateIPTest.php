@@ -30,12 +30,12 @@ class UpdateIPTest extends TestCase
             'type' => 'ipv4',
         ]);
 
-        $response = $this->putJson("/api/ip/{$ip->id}", [
-            'label' => 'Updated Label',
-            'comment' => 'Updated comment',
-        ], [
+        $response = $this->withHeaders([
             'X-User-ID' => $userId,
             'X-User-Role' => 'regular',
+        ])->putJson("/api/ip/{$ip->id}", [
+            'label' => 'Updated Label',
+            'comment' => 'Updated comment',
         ]);
 
         $response->assertStatus(200)
@@ -68,11 +68,11 @@ class UpdateIPTest extends TestCase
             'type' => 'ipv4',
         ]);
 
-        $response = $this->putJson("/api/ip/{$ip->id}", [
-            'label' => 'Hacked Label',
-        ], [
+        $response = $this->withHeaders([
             'X-User-ID' => $otherUserId,
             'X-User-Role' => 'regular',
+        ])->putJson("/api/ip/{$ip->id}", [
+            'label' => 'Hacked Label',
         ]);
 
         $response->assertStatus(403)
@@ -104,11 +104,11 @@ class UpdateIPTest extends TestCase
             'type' => 'ipv4',
         ]);
 
-        $response = $this->putJson("/api/ip/{$ip->id}", [
-            'label' => 'Admin Updated Label',
-        ], [
+        $response = $this->withHeaders([
             'X-User-ID' => $adminId,
             'X-User-Role' => 'super_admin',
+        ])->putJson("/api/ip/{$ip->id}", [
+            'label' => 'Admin Updated Label',
         ]);
 
         $response->assertStatus(200)
@@ -127,11 +127,11 @@ class UpdateIPTest extends TestCase
     {
         $userId = 'user-123';
 
-        $response = $this->putJson('/api/ip/non-existent-id', [
-            'label' => 'Updated Label',
-        ], [
+        $response = $this->withHeaders([
             'X-User-ID' => $userId,
             'X-User-Role' => 'regular',
+        ])->putJson('/api/ip/non-existent-id', [
+            'label' => 'Updated Label',
         ]);
 
         $response->assertStatus(404)
@@ -157,11 +157,11 @@ class UpdateIPTest extends TestCase
             'type' => 'ipv4',
         ]);
 
-        $response = $this->putJson("/api/ip/{$ip->id}", [
-            'comment' => 'Only comment',
-        ], [
+        $response = $this->withHeaders([
             'X-User-ID' => $userId,
             'X-User-Role' => 'regular',
+        ])->putJson("/api/ip/{$ip->id}", [
+            'comment' => 'Only comment',
         ]);
 
         $response->assertStatus(422)
@@ -182,11 +182,11 @@ class UpdateIPTest extends TestCase
             'type' => 'ipv4',
         ]);
 
-        $this->putJson("/api/ip/{$ip->id}", [
-            'label' => 'Updated Label',
-        ], [
+        $this->withHeaders([
             'X-User-ID' => $userId,
             'X-User-Role' => 'regular',
+        ])->putJson("/api/ip/{$ip->id}", [
+            'label' => 'Updated Label',
         ]);
 
         // Check history was created with old and new values

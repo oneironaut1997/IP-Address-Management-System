@@ -22,13 +22,13 @@ class AuditLoggingTest extends TestCase
     {
         $userId = 'user-123';
 
-        $response = $this->postJson('/api/ip', [
+        $response = $this->withHeaders([
+            'X-User-ID' => $userId,
+            'X-User-Role' => 'regular',
+        ])->postJson('/api/ip', [
             'ip_address' => '192.168.1.1',
             'label' => 'Test Server',
             'comment' => 'Test comment',
-        ], [
-            'X-User-ID' => $userId,
-            'X-User-Role' => 'regular',
         ]);
 
         $ipId = $response->json('data.id');
@@ -65,12 +65,12 @@ class AuditLoggingTest extends TestCase
             'type' => 'ipv4',
         ]);
 
-        $this->putJson("/api/ip/{$ip->id}", [
-            'label' => 'Updated Label',
-            'comment' => 'Updated comment',
-        ], [
+        $this->withHeaders([
             'X-User-ID' => $userId,
             'X-User-Role' => 'regular',
+        ])->putJson("/api/ip/{$ip->id}", [
+            'label' => 'Updated Label',
+            'comment' => 'Updated comment',
         ]);
 
         // Check ip_history table has old and new values
@@ -104,10 +104,10 @@ class AuditLoggingTest extends TestCase
             'type' => 'ipv4',
         ]);
 
-        $this->deleteJson("/api/ip/{$ip->id}", [], [
+        $this->withHeaders([
             'X-User-ID' => $adminId,
             'X-User-Role' => 'super_admin',
-        ]);
+        ])->deleteJson("/api/ip/{$ip->id}");
 
         // Check ip_history table
         $this->assertDatabaseHas('ip_history', [
@@ -133,37 +133,37 @@ class AuditLoggingTest extends TestCase
         $userId = 'user-123';
 
         // Create IP
-        $response = $this->postJson('/api/ip', [
+        $response = $this->withHeaders([
+            'X-User-ID' => $userId,
+            'X-User-Role' => 'regular',
+        ])->postJson('/api/ip', [
             'ip_address' => '192.168.1.1',
             'label' => 'Initial Label',
             'type' => 'ipv4',
-        ], [
-            'X-User-ID' => $userId,
-            'X-User-Role' => 'regular',
         ]);
 
         $ipId = $response->json('data.id');
 
         // Update IP twice
-        $this->putJson("/api/ip/{$ipId}", [
-            'label' => 'Second Label',
-        ], [
+        $this->withHeaders([
             'X-User-ID' => $userId,
             'X-User-Role' => 'regular',
+        ])->putJson("/api/ip/{$ipId}", [
+            'label' => 'Second Label',
         ]);
 
-        $this->putJson("/api/ip/{$ipId}", [
-            'label' => 'Third Label',
-        ], [
+        $this->withHeaders([
             'X-User-ID' => $userId,
             'X-User-Role' => 'regular',
+        ])->putJson("/api/ip/{$ipId}", [
+            'label' => 'Third Label',
         ]);
 
         // Get history
-        $historyResponse = $this->getJson("/api/ip/{$ipId}/history", [
+        $historyResponse = $this->withHeaders([
             'X-User-ID' => $userId,
             'X-User-Role' => 'regular',
-        ]);
+        ])->getJson("/api/ip/{$ipId}/history");
 
         $historyResponse->assertStatus(200)
             ->assertJsonCount(3, 'data');
@@ -179,12 +179,12 @@ class AuditLoggingTest extends TestCase
     {
         $userId = 'user-123';
 
-        $response = $this->postJson('/api/ip', [
-            'ip_address' => '192.168.1.1',
-            'label' => 'Test Server',
-        ], [
+        $response = $this->withHeaders([
             'X-User-ID' => $userId,
             'X-User-Role' => 'regular',
+        ])->postJson('/api/ip', [
+            'ip_address' => '192.168.1.1',
+            'label' => 'Test Server',
         ]);
 
         $ipId = $response->json('data.id');
@@ -204,13 +204,13 @@ class AuditLoggingTest extends TestCase
     {
         $userId = 'user-123';
 
-        $response = $this->postJson('/api/ip', [
+        $response = $this->withHeaders([
+            'X-User-ID' => $userId,
+            'X-User-Role' => 'regular',
+        ])->postJson('/api/ip', [
             'ip_address' => '192.168.1.1',
             'label' => 'Test Server',
             'comment' => 'Test comment',
-        ], [
-            'X-User-ID' => $userId,
-            'X-User-Role' => 'regular',
         ]);
 
         $ipId = $response->json('data.id');

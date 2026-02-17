@@ -89,7 +89,7 @@ class AuthProxyProtectedTest extends TestCase
         ]);
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
+            'Authorization' => 'Bearer '.$token,
         ])->getJson('/api/audit/logs', [
             'event_type' => 'user.login',
             'user_id' => 'test-user-uuid',
@@ -126,7 +126,7 @@ class AuthProxyProtectedTest extends TestCase
         ]);
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
+            'Authorization' => 'Bearer '.$token,
         ])->getJson('/api/audit/logs', [
             'page' => 1,
             'per_page' => 10,
@@ -160,7 +160,7 @@ class AuthProxyProtectedTest extends TestCase
         ]);
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
+            'Authorization' => 'Bearer '.$token,
         ])->getJson('/api/auth/me');
 
         // The gateway should forward these headers to auth-service
@@ -179,13 +179,13 @@ class AuthProxyProtectedTest extends TestCase
         ]);
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
+            'Authorization' => 'Bearer '.$token,
         ])->postJson('/api/auth/logout');
 
         // Should reject expired token (401) or fail if service unavailable (500)
         $this->assertTrue(
             in_array($response->getStatusCode(), [401, 500]),
-            'Expected 401 or 500, got ' . $response->getStatusCode()
+            'Expected 401 or 500, got '.$response->getStatusCode()
         );
     }
 
@@ -223,7 +223,7 @@ class AuthProxyProtectedTest extends TestCase
         ]);
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
+            'Authorization' => 'Bearer '.$token,
         ])->postJson('/api/auth/logout');
 
         $response->assertStatus(200)
@@ -254,7 +254,7 @@ class AuthProxyProtectedTest extends TestCase
         ]);
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
+            'Authorization' => 'Bearer '.$token,
         ])->getJson('/api/auth/me');
 
         $response->assertStatus(200)
@@ -288,7 +288,7 @@ class AuthProxyProtectedTest extends TestCase
         ]);
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
+            'Authorization' => 'Bearer '.$token,
         ])->getJson('/api/audit/logs');
 
         $response->assertStatus(200)
@@ -319,7 +319,7 @@ class AuthProxyProtectedTest extends TestCase
         ]);
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
+            'Authorization' => 'Bearer '.$token,
         ])->getJson('/api/auth/me');
 
         $response->assertStatus(200)

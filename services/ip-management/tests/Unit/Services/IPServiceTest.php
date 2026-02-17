@@ -22,7 +22,7 @@ class IPServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->ipService = new IPService();
+        $this->ipService = new IPService;
     }
 
     /**
@@ -62,7 +62,7 @@ class IPServiceTest extends TestCase
         $this->assertEquals('user-uuid-123', $result['ip']->user_id);
 
         // Assert history was created
-        $this->assertDatabaseHas('ip_histories', [
+        $this->assertDatabaseHas('ip_history', [
             'ip_address_id' => $result['ip']->id,
             'action' => 'created',
             'modified_by' => 'user-uuid-123',
@@ -151,7 +151,7 @@ class IPServiceTest extends TestCase
         $this->assertEquals('Updated Comment', $result->comment);
 
         // Assert history was created
-        $this->assertDatabaseHas('ip_histories', [
+        $this->assertDatabaseHas('ip_history', [
             'ip_address_id' => $ip->id,
             'action' => 'updated',
             'modified_by' => 'user-uuid-123',
@@ -176,7 +176,7 @@ class IPServiceTest extends TestCase
         $this->assertSoftDeleted('ip_addresses', ['id' => $ip->id]);
 
         // Assert history was created
-        $this->assertDatabaseHas('ip_histories', [
+        $this->assertDatabaseHas('ip_history', [
             'ip_address_id' => $ip->id,
             'action' => 'deleted',
             'modified_by' => 'user-uuid-123',

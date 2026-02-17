@@ -6,8 +6,8 @@ use App\Http\Requests\StoreIPRequest;
 use App\Http\Requests\UpdateIPRequest;
 use App\Http\Resources\IPAddressCollection;
 use App\Http\Resources\IPAddressResource;
-use App\Models\IPAddress;
 use App\Services\IPService;
+use Auth;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -28,7 +28,7 @@ use Illuminate\Http\Response;
 class IPController extends Controller
 {
     /**
-     * @param IPService $ipService The IP management service
+     * @param  IPService  $ipService  The IP management service
      */
     public function __construct(
         protected IPService $ipService
@@ -41,7 +41,6 @@ class IPController extends Controller
      * Supports pagination via 'per_page' query parameter (default: 20, max: 100).
      *
      * @param  Request  $request  The HTTP request
-     * @return JsonResponse
      */
     public function index(Request $request): JsonResponse
     {
@@ -60,11 +59,33 @@ class IPController extends Controller
      * Logs activity for audit trail.
      *
      * @param  StoreIPRequest  $request  Validated store request
-     * @return JsonResponse
      */
     public function store(StoreIPRequest $request): JsonResponse
     {
-        $userId = $request->header('X-User-ID');
+        // Get user from multiple sources - support both actingAs, auth, and headers
+        $authUser = \Illuminate\Support\Facades\Auth::user();
+        $requestUser = $request->user();
+        $headerUserId = $request->header('X-User-ID');
+        
+        $userId = null;
+        
+        if ($authUser) {
+            $userId = $authUser->id;
+        } elseif ($requestUser) {
+            $userId = $requestUser->id;
+        } elseif ($headerUserId) {
+            $userId = $headerUserId;
+        }
+
+        if (!$userId) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'UNAUTHORIZED',
+                    'message' => 'User not authenticated.',
+                ],
+            ], Response::HTTP_UNAUTHORIZED);
+        }
 
         $result = $this->ipService->createIPAddress($request->validated(), $userId);
 
@@ -86,7 +107,6 @@ class IPController extends Controller
      * Display the specified IP address.
      *
      * @param  string  $id  The IP address ID
-     * @return JsonResponse
      */
     public function show(string $id): JsonResponse
     {
@@ -116,7 +136,6 @@ class IPController extends Controller
      *
      * @param  UpdateIPRequest  $request  Validated update request
      * @param  string  $id  The IP address ID
-     * @return JsonResponse
      */
     public function update(UpdateIPRequest $request, string $id): JsonResponse
     {
@@ -132,10 +151,47 @@ class IPController extends Controller
             ], Response::HTTP_NOT_FOUND);
         }
 
-        // Authorization check using policy
-        $this->authorize('update', $ipAddress);
+        // Get user from multiple sources - support both actingAs, auth, and headers
+        $authUser = \Illuminate\Support\Facades\Auth::user();
+        $requestUser = $request->user();
+        $headerUserId = $request->header('X-User-ID');
+        $headerUserRole = $request->header('X-User-Role', 'regular');
+        
+        $userId = null;
+        $userRole = 'regular';
+        
+        if ($authUser) {
+            $userId = $authUser->id;
+            $userRole = $authUser->role ?? 'regular';
+        } elseif ($requestUser) {
+            $userId = $requestUser->id;
+            $userRole = $requestUser->role ?? 'regular';
+        } elseif ($headerUserId) {
+            $userId = $headerUserId;
+            $userRole = $headerUserRole;
+        }
 
-        $userId = $request->header('X-User-ID');
+        if (!$userId) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'UNAUTHORIZED',
+                    'message' => 'User not authenticated.',
+                ],
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        // Use IPService authorization check (supports both User model and header-based auth)
+        if (!$this->ipService->canUpdate($ipAddress, $userId, $userRole)) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'FORBIDDEN',
+                    'message' => 'You do not have permission to update this IP address.',
+                ],
+            ], Response::HTTP_FORBIDDEN);
+        }
+
         $updatedIp = $this->ipService->updateIPAddress($ipAddress, $request->validated(), $userId);
 
         return response()->json([
@@ -153,7 +209,6 @@ class IPController extends Controller
      *
      * @param  Request  $request  The HTTP request
      * @param  string  $id  The IP address ID
-     * @return JsonResponse
      */
     public function destroy(Request $request, string $id): JsonResponse
     {
@@ -169,10 +224,47 @@ class IPController extends Controller
             ], Response::HTTP_NOT_FOUND);
         }
 
-        // Authorization check using policy
-        $this->authorize('delete', $ipAddress);
+        // Get user from multiple sources - support both actingAs, auth, and headers
+        $authUser = \Illuminate\Support\Facades\Auth::user();
+        $requestUser = $request->user();
+        $headerUserId = $request->header('X-User-ID');
+        $headerUserRole = $request->header('X-User-Role', 'regular');
+        
+        $userId = null;
+        $userRole = 'regular';
+        
+        if ($authUser) {
+            $userId = $authUser->id;
+            $userRole = $authUser->role ?? 'regular';
+        } elseif ($requestUser) {
+            $userId = $requestUser->id;
+            $userRole = $requestUser->role ?? 'regular';
+        } elseif ($headerUserId) {
+            $userId = $headerUserId;
+            $userRole = $headerUserRole;
+        }
 
-        $userId = $request->header('X-User-ID');
+        if (!$userId) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'UNAUTHORIZED',
+                    'message' => 'User not authenticated.',
+                ],
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        // Use IPService authorization check (supports both User model and header-based auth)
+        if (!$this->ipService->canDelete($userRole)) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'FORBIDDEN',
+                    'message' => 'Only super administrators can delete IP addresses.',
+                ],
+            ], Response::HTTP_FORBIDDEN);
+        }
+
         $this->ipService->deleteIPAddress($ipAddress, $userId);
 
         return response()->json([
@@ -185,7 +277,6 @@ class IPController extends Controller
      * Get the change history for a specific IP address.
      *
      * @param  string  $id  The IP address ID
-     * @return JsonResponse
      */
     public function history(string $id): JsonResponse
     {

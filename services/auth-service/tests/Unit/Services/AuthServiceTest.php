@@ -5,7 +5,6 @@ namespace Tests\Unit\Services;
 use App\Events\UserLoggedIn;
 use App\Events\UserLoggedOut;
 use App\Models\User;
-use App\Models\UserSession;
 use App\Services\AuthService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
@@ -29,7 +28,7 @@ class AuthServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->authService = new AuthService();
+        $this->authService = new AuthService;
     }
 
     /**
@@ -80,7 +79,7 @@ class AuthServiceTest extends TestCase
     public function test_login_creates_session_and_fires_event_for_valid_credentials(): void
     {
         Event::fake([UserLoggedIn::class]);
-        Redis::fake();
+        Redis::spy();
 
         $user = User::factory()->create([
             'email' => 'test@example.com',
@@ -119,22 +118,26 @@ class AuthServiceTest extends TestCase
     public function test_logout_removes_refresh_tokens_and_fires_event(): void
     {
         Event::fake([UserLoggedOut::class]);
-        Redis::fake();
 
         $user = User::factory()->create();
 
-        // Mock Redis keys
-        Redis::shouldReceive('keys')
-            ->with('refresh:*')
-            ->andReturn(['refresh:test-jti']);
-
-        Redis::shouldReceive('get')
-            ->with('refresh:test-jti')
-            ->andReturn($user->id);
+        // Mock Redis for logout - use smembers for the set-based approach
+        Redis::shouldReceive('smembers')
+            ->with("user:{$user->id}:refresh_tokens")
+            ->andReturn(['test-jti']);
 
         Redis::shouldReceive('del')
             ->with('refresh:test-jti')
             ->andReturn(1);
+
+        Redis::shouldReceive('del')
+            ->with("user:{$user->id}:refresh_tokens")
+            ->andReturn(1);
+
+        // Mock JWTAuth to avoid token requirement
+        JWTAuth::shouldReceive('invalidate')
+            ->once()
+            ->andReturn(true);
 
         $this->authService->logout($user, 'test-jti');
 
@@ -153,7 +156,8 @@ class AuthServiceTest extends TestCase
             ->andReturnSelf();
 
         JWTAuth::shouldReceive('getPayload')
-            ->andReturn(new class {
+            ->andReturn(new class
+            {
                 public function get($key)
                 {
                     return $key === 'type' ? 'access' : 'test-jti';
@@ -175,7 +179,8 @@ class AuthServiceTest extends TestCase
             ->andReturnSelf();
 
         JWTAuth::shouldReceive('getPayload')
-            ->andReturn(new class {
+            ->andReturn(new class
+            {
                 public function get($key)
                 {
                     return match ($key) {

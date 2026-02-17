@@ -3,6 +3,7 @@
 namespace Tests\Feature\IP;
 
 use App\Models\IPAddress;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -22,13 +23,13 @@ class CreateIPTest extends TestCase
     {
         $userId = 'user-123';
 
-        $response = $this->postJson('/api/ip', [
+        $response = $this->withHeaders([
+            'X-User-ID' => $userId,
+            'X-User-Role' => 'regular',
+        ])->postJson('/api/ip', [
             'ip_address' => '192.168.1.1',
             'label' => 'Test Server',
             'comment' => 'Test comment',
-        ], [
-            'X-User-ID' => $userId,
-            'X-User-Role' => 'regular',
         ]);
 
         $response->assertStatus(201)
@@ -68,13 +69,13 @@ class CreateIPTest extends TestCase
     {
         $userId = 'user-123';
 
-        $response = $this->postJson('/api/ip', [
+        $response = $this->withHeaders([
+            'X-User-ID' => $userId,
+            'X-User-Role' => 'regular',
+        ])->postJson('/api/ip', [
             'ip_address' => '2001:0db8:85a3:0000:0000:8a2e:0370:7334',
             'label' => 'IPv6 Server',
             'comment' => 'Test IPv6',
-        ], [
-            'X-User-ID' => $userId,
-            'X-User-Role' => 'regular',
         ]);
 
         $response->assertStatus(201)
@@ -94,12 +95,12 @@ class CreateIPTest extends TestCase
     {
         $userId = 'user-123';
 
-        $response = $this->postJson('/api/ip', [
-            'ip_address' => 'invalid-ip-address',
-            'label' => 'Invalid IP',
-        ], [
+        $response = $this->withHeaders([
             'X-User-ID' => $userId,
             'X-User-Role' => 'regular',
+        ])->postJson('/api/ip', [
+            'ip_address' => 'invalid-ip-address',
+            'label' => 'Invalid IP',
         ]);
 
         $response->assertStatus(400)
@@ -119,11 +120,11 @@ class CreateIPTest extends TestCase
     {
         $userId = 'user-123';
 
-        $response = $this->postJson('/api/ip', [
-            'label' => 'Test Server',
-        ], [
+        $response = $this->withHeaders([
             'X-User-ID' => $userId,
             'X-User-Role' => 'regular',
+        ])->postJson('/api/ip', [
+            'label' => 'Test Server',
         ]);
 
         $response->assertStatus(422)
@@ -137,11 +138,11 @@ class CreateIPTest extends TestCase
     {
         $userId = 'user-123';
 
-        $response = $this->postJson('/api/ip', [
-            'ip_address' => '192.168.1.1',
-        ], [
+        $response = $this->withHeaders([
             'X-User-ID' => $userId,
             'X-User-Role' => 'regular',
+        ])->postJson('/api/ip', [
+            'ip_address' => '192.168.1.1',
         ]);
 
         $response->assertStatus(422)
@@ -155,12 +156,12 @@ class CreateIPTest extends TestCase
     {
         $userId = 'user-123';
 
-        $response = $this->postJson('/api/ip', [
-            'ip_address' => '192.168.1.1',
-            'label' => 'Test Server',
-        ], [
+        $response = $this->withHeaders([
             'X-User-ID' => $userId,
             'X-User-Role' => 'regular',
+        ])->postJson('/api/ip', [
+            'ip_address' => '192.168.1.1',
+            'label' => 'Test Server',
         ]);
 
         $ipId = $response->json('data.id');

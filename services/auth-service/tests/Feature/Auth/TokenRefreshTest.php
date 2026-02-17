@@ -2,9 +2,12 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Events\UserLoggedIn;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Redis;
 use Tests\TestCase;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
@@ -22,11 +25,22 @@ class TokenRefreshTest extends TestCase
      */
     public function test_user_can_refresh_token_with_valid_refresh_token(): void
     {
+        // Fake events to avoid Spatie Activity Log issues
+        Event::fake([UserLoggedIn::class]);
+
         $user = User::create([
             'email' => 'test@example.com',
             'password' => Hash::make('Password123!'),
             'role' => 'regular',
         ]);
+
+        // Mock Redis for login
+        Redis::shouldReceive('setex')->andReturn(true);
+        Redis::shouldReceive('sadd')->andReturn(1);
+        Redis::shouldReceive('expire')->andReturn(true);
+        Redis::shouldReceive('get')->andReturn($user->id);
+        Redis::shouldReceive('del')->andReturn(1);
+        Redis::shouldReceive('srem')->andReturn(1);
 
         // Login to get tokens
         $loginResponse = $this->postJson('/api/auth/login', [
@@ -127,11 +141,19 @@ class TokenRefreshTest extends TestCase
      */
     public function test_old_refresh_token_is_invalidated_after_refresh(): void
     {
+        // Fake events to avoid Spatie Activity Log issues
+        Event::fake([UserLoggedIn::class]);
+
         $user = User::create([
             'email' => 'test@example.com',
             'password' => Hash::make('Password123!'),
             'role' => 'regular',
         ]);
+
+        // Mock Redis for login
+        Redis::shouldReceive('setex')->andReturn(true);
+        Redis::shouldReceive('sadd')->andReturn(1);
+        Redis::shouldReceive('expire')->andReturn(true);
 
         // Login to get tokens
         $loginResponse = $this->postJson('/api/auth/login', [
@@ -141,10 +163,18 @@ class TokenRefreshTest extends TestCase
 
         $oldRefreshToken = $loginResponse->json('data.refresh_token');
 
+        // Mock Redis for first refresh - return user ID for validation
+        Redis::shouldReceive('get')->once()->andReturn($user->id);
+        Redis::shouldReceive('del')->andReturn(1);
+        Redis::shouldReceive('srem')->andReturn(1);
+
         // Refresh the token
         $this->postJson('/api/auth/refresh', [], [
             'Authorization' => 'Bearer '.$oldRefreshToken,
         ]);
+
+        // Mock Redis for second refresh - return null to simulate invalidated token
+        Redis::shouldReceive('get')->once()->andReturn(null);
 
         // Try to use old refresh token again
         $response = $this->postJson('/api/auth/refresh', [], [

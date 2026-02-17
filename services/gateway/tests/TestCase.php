@@ -2,9 +2,9 @@
 
 namespace Tests;
 
-use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 /**
@@ -19,8 +19,8 @@ abstract class TestCase extends BaseTestCase
     /**
      * Generate a valid JWT token for testing.
      *
-     * @param array $userAttributes User attributes to override (role is not stored in DB)
-     * @param array $additionalClaims Additional JWT claims
+     * @param  array  $userAttributes  User attributes to override (role is not stored in DB)
+     * @param  array  $additionalClaims  Additional JWT claims
      * @return string The generated JWT token
      */
     protected function generateValidToken(array $userAttributes = [], array $additionalClaims = []): string
@@ -51,20 +51,20 @@ abstract class TestCase extends BaseTestCase
     /**
      * Get authentication headers with a valid JWT token.
      *
-     * @param array $userAttributes User attributes for token generation
+     * @param  array  $userAttributes  User attributes for token generation
      * @return array The headers including Authorization
      */
     protected function withAuthHeaders(array $userAttributes = []): array
     {
         return [
-            'Authorization' => 'Bearer ' . $this->generateValidToken($userAttributes),
+            'Authorization' => 'Bearer '.$this->generateValidToken($userAttributes),
         ];
     }
 
     /**
      * Create a test user and generate a token for them.
      *
-     * @param array $userAttributes User attributes
+     * @param  array  $userAttributes  User attributes
      * @return string The JWT token
      */
     protected function createAuthenticatedUser(array $userAttributes = []): string
@@ -78,8 +78,8 @@ abstract class TestCase extends BaseTestCase
     /**
      * Generate a token for a specific user.
      *
-     * @param User $user The user to generate a token for
-     * @param array $additionalClaims Additional JWT claims
+     * @param  User  $user  The user to generate a token for
+     * @param  array  $additionalClaims  Additional JWT claims
      * @return string The generated JWT token
      */
     protected function tokenForUser(User $user, array $additionalClaims = []): string

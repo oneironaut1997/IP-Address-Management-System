@@ -51,11 +51,19 @@ class JwtMiddleware
             // Try to set the token and get payload
             JWTAuth::setToken($tokenString);
 
-            // Get payload without full validation
-            try {
-                $payload = JWTAuth::getPayload();
-            } catch (\Exception $e) {
-                throw $e;
+            // Get payload
+            $payload = JWTAuth::getPayload();
+
+            // Manually check expiration
+            $exp = $payload->get('exp');
+            if ($exp && $exp < now()->timestamp) {
+                return response()->json([
+                    'success' => false,
+                    'error' => [
+                        'code' => 'TOKEN_EXPIRED',
+                        'message' => 'Token has expired',
+                    ],
+                ], 401);
             }
 
             // Extract user data

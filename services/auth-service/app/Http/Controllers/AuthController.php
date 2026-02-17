@@ -28,7 +28,7 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 class AuthController extends Controller
 {
     /**
-     * @param AuthService $authService The authentication service
+     * @param  AuthService  $authService  The authentication service
      */
     public function __construct(
         protected AuthService $authService
@@ -41,7 +41,6 @@ class AuthController extends Controller
      * Returns a success response upon completion.
      *
      * @param  RegisterRequest  $request  Validated registration request
-     * @return JsonResponse
      */
     public function register(RegisterRequest $request): JsonResponse
     {
@@ -63,7 +62,6 @@ class AuthController extends Controller
      * Validates credentials and generates both access and refresh tokens.
      *
      * @param  LoginRequest  $request  Validated login request
-     * @return JsonResponse
      */
     public function login(LoginRequest $request): JsonResponse
     {
@@ -98,7 +96,6 @@ class AuthController extends Controller
      * refresh token from Redis.
      *
      * @param  Request  $request  The HTTP request
-     * @return JsonResponse
      */
     public function logout(Request $request): JsonResponse
     {
@@ -129,7 +126,6 @@ class AuthController extends Controller
      * and implements token rotation for enhanced security.
      *
      * @param  Request  $request  The HTTP request with refresh token
-     * @return JsonResponse
      */
     public function refresh(Request $request): JsonResponse
     {
@@ -165,8 +161,6 @@ class AuthController extends Controller
      * Get the authenticated user's profile.
      *
      * Returns the current user's information including id, email, and role.
-     *
-     * @return JsonResponse
      */
     public function me(): JsonResponse
     {

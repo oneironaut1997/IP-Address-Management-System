@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Database\Eloquent\Collection;
 use Spatie\Activitylog\Models\Activity;
 
 /**
@@ -36,7 +35,6 @@ class ActivityLogService
      *
      * @param  array  $filters  Optional filters
      * @param  int  $perPage  Number of items per page (default: 50, max: 100)
-     * @return LengthAwarePaginator
      */
     public function getActivityLogs(array $filters = [], int $perPage = 50): LengthAwarePaginator
     {
@@ -58,43 +56,41 @@ class ActivityLogService
      * Apply filters to the activity log query.
      *
      * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @param  array  $filters
-     * @return void
      */
     protected function applyFilters($query, array $filters): void
     {
         // Filter by event type (ip.created, ip.updated, ip.deleted)
-        if (!empty($filters['event'])) {
+        if (! empty($filters['event'])) {
             $query->where('event', $filters['event']);
         }
 
         // Filter by causer's user_id
-        if (!empty($filters['user_id'])) {
+        if (! empty($filters['user_id'])) {
             $query->where('causer_id', $filters['user_id']);
         }
 
         // Filter by subject type (e.g., IPAddress)
-        if (!empty($filters['subject_type'])) {
+        if (! empty($filters['subject_type'])) {
             $query->where('subject_type', $filters['subject_type']);
         }
 
         // Filter by subject ID
-        if (!empty($filters['subject_id'])) {
+        if (! empty($filters['subject_id'])) {
             $query->where('subject_id', $filters['subject_id']);
         }
 
         // Filter by log name
-        if (!empty($filters['log_name'])) {
+        if (! empty($filters['log_name'])) {
             $query->where('log_name', $filters['log_name']);
         }
 
         // Date range filter - from date
-        if (!empty($filters['from'])) {
+        if (! empty($filters['from'])) {
             $query->where('created_at', '>=', $filters['from']);
         }
 
         // Date range filter - to date
-        if (!empty($filters['to'])) {
+        if (! empty($filters['to'])) {
             $query->where('created_at', '<=', $filters['to']);
         }
     }
@@ -111,7 +107,7 @@ class ActivityLogService
         $filters = [];
 
         foreach ($allowedFilters as $filter) {
-            if (!empty($input[$filter])) {
+            if (! empty($input[$filter])) {
                 $filters[$filter] = $input[$filter];
             }
         }

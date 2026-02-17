@@ -37,7 +37,6 @@ class AuditService
      *
      * @param  array  $filters  Optional filters (event, user_id, subject_type, from, to)
      * @param  int  $perPage  Number of items per page (default: 50, max: 100)
-     * @return LengthAwarePaginator
      */
     public function getAuditLogs(array $filters = [], int $perPage = 50): LengthAwarePaginator
     {
@@ -59,7 +58,6 @@ class AuditService
      * Get a single audit log by ID.
      *
      * @param  string  $id  The UUID of the audit log
-     * @return Activity|null
      */
     public function getAuditLogById(string $id): ?Activity
     {
@@ -70,8 +68,6 @@ class AuditService
      * Get available event types for filtering.
      *
      * Returns a list of unique event types stored in the audit logs.
-     *
-     * @return Collection
      */
     public function getEventTypes(): Collection
     {
@@ -84,48 +80,46 @@ class AuditService
      * Apply filters to the audit log query.
      *
      * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @param  array  $filters
-     * @return void
      */
     protected function applyFilters($query, array $filters): void
     {
         // Filter by event type (auth.login, auth.logout)
-        if (!empty($filters['event'])) {
+        if (! empty($filters['event'])) {
             $query->where('event', $filters['event']);
         }
 
         // Filter by event_type alias for backward compatibility
-        if (!empty($filters['event_type'])) {
+        if (! empty($filters['event_type'])) {
             $query->where('event', $filters['event_type']);
         }
 
         // Filter by causer's user_id
-        if (!empty($filters['user_id'])) {
+        if (! empty($filters['user_id'])) {
             $query->where('causer_id', $filters['user_id']);
         }
 
         // Filter by subject type
-        if (!empty($filters['subject_type'])) {
+        if (! empty($filters['subject_type'])) {
             $query->where('subject_type', $filters['subject_type']);
         }
 
         // Filter by subject_type alias for backward compatibility
-        if (!empty($filters['entity_type'])) {
+        if (! empty($filters['entity_type'])) {
             $query->where('subject_type', $filters['entity_type']);
         }
 
         // Filter by subject ID
-        if (!empty($filters['subject_id'])) {
+        if (! empty($filters['subject_id'])) {
             $query->where('subject_id', $filters['subject_id']);
         }
 
         // Date range filter - from date
-        if (!empty($filters['from'])) {
+        if (! empty($filters['from'])) {
             $query->where('created_at', '>=', $filters['from']);
         }
 
         // Date range filter - to date
-        if (!empty($filters['to'])) {
+        if (! empty($filters['to'])) {
             $query->where('created_at', '<=', $filters['to']);
         }
     }
@@ -142,7 +136,7 @@ class AuditService
         $filters = [];
 
         foreach ($allowedFilters as $filter) {
-            if (!empty($input[$filter])) {
+            if (! empty($input[$filter])) {
                 $filters[$filter] = $input[$filter];
             }
         }

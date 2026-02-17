@@ -25,7 +25,6 @@ class IPProxyService extends ProxyService
      * @param  string  $method  HTTP method (get, post, put, patch, delete)
      * @param  Request  $request  The original HTTP request
      * @param  string|null  $path  Optional path segment (e.g., '{id}', '{id}/history')
-     * @return Response
      */
     public function proxyRequest(string $method, Request $request, ?string $path = null): Response
     {
@@ -38,7 +37,6 @@ class IPProxyService extends ProxyService
      * Get all IP addresses with pagination.
      *
      * @param  Request  $request  The HTTP request with query parameters
-     * @return Response
      */
     public function getAllIPAddresses(Request $request): Response
     {
@@ -49,7 +47,6 @@ class IPProxyService extends ProxyService
      * Create a new IP address.
      *
      * @param  Request  $request  The HTTP request with IP data
-     * @return Response
      */
     public function createIPAddress(Request $request): Response
     {
@@ -61,7 +58,6 @@ class IPProxyService extends ProxyService
      *
      * @param  string  $id  The IP address ID
      * @param  Request  $request  The HTTP request
-     * @return Response
      */
     public function getIPAddress(string $id, Request $request): Response
     {
@@ -73,7 +69,6 @@ class IPProxyService extends ProxyService
      *
      * @param  string  $id  The IP address ID
      * @param  Request  $request  The HTTP request with update data
-     * @return Response
      */
     public function updateIPAddress(string $id, Request $request): Response
     {
@@ -85,7 +80,6 @@ class IPProxyService extends ProxyService
      *
      * @param  string  $id  The IP address ID
      * @param  Request  $request  The HTTP request
-     * @return Response
      */
     public function deleteIPAddress(string $id, Request $request): Response
     {
@@ -97,7 +91,6 @@ class IPProxyService extends ProxyService
      *
      * @param  string  $id  The IP address ID
      * @param  Request  $request  The HTTP request
-     * @return Response
      */
     public function getIPAddressHistory(string $id, Request $request): Response
     {
@@ -105,10 +98,20 @@ class IPProxyService extends ProxyService
     }
 
     /**
+     * Get the audit log for an IP address.
+     *
+     * @param  string  $id  The IP address ID
+     * @param  Request  $request  The HTTP request
+     */
+    public function getIPAddressAudit(string $id, Request $request): Response
+    {
+        return $this->forwardToIPService('get', "/api/ip/{$id}/audit", $request);
+    }
+
+    /**
      * Build the endpoint path for the IP service.
      *
      * @param  string|null  $path  Optional path segment
-     * @return string
      */
     protected function buildEndpoint(?string $path = null): string
     {

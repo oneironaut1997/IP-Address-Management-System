@@ -301,6 +301,7 @@ npm run test
 - Follow PSR-12 coding standards
 - Use Laravel Pint for code formatting:
   ```bash
+  docker exec -it ipms-gateway ./vendor/bin/pint
   docker exec -it ipms-auth-service ./vendor/bin/pint
   docker exec -it ipms-ip-management ./vendor/bin/pint
   ```

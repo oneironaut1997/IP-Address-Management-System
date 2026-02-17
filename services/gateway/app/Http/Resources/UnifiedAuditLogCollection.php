@@ -15,8 +15,6 @@ class UnifiedAuditLogCollection extends ResourceCollection
 {
     /**
      * Additional meta data to include in the response.
-     *
-     * @var array
      */
     protected array $meta;
 
@@ -24,7 +22,6 @@ class UnifiedAuditLogCollection extends ResourceCollection
      * Create a new resource collection.
      *
      * @param  mixed  $resource
-     * @param  array  $meta
      */
     public function __construct($resource, array $meta = [])
     {
@@ -35,7 +32,6 @@ class UnifiedAuditLogCollection extends ResourceCollection
     /**
      * Transform the resource collection into an array.
      *
-     * @param  Request  $request
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array

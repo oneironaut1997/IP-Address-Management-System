@@ -43,7 +43,6 @@ class ProxyService
      * @param  string  $endpoint  API endpoint (e.g., '/api/auth/login')
      * @param  Request  $request  The original request
      * @param  array  $additionalHeaders  Additional headers to forward
-     * @return Response
      */
     public function forwardToAuthService(
         string $method,
@@ -52,7 +51,7 @@ class ProxyService
         array $additionalHeaders = []
     ): Response {
         return $this->forwardRequest(
-            $this->authServiceUrl . $endpoint,
+            $this->authServiceUrl.$endpoint,
             $method,
             $request,
             $additionalHeaders
@@ -66,7 +65,6 @@ class ProxyService
      * @param  string  $endpoint  API endpoint (e.g., '/api/ip')
      * @param  Request  $request  The original request
      * @param  array  $additionalHeaders  Additional headers to forward
-     * @return Response
      */
     public function forwardToIPService(
         string $method,
@@ -75,7 +73,7 @@ class ProxyService
         array $additionalHeaders = []
     ): Response {
         return $this->forwardRequest(
-            $this->ipServiceUrl . $endpoint,
+            $this->ipServiceUrl.$endpoint,
             $method,
             $request,
             $additionalHeaders
@@ -89,7 +87,6 @@ class ProxyService
      * @param  string  $method  HTTP method
      * @param  Request  $request  The original request
      * @param  array  $additionalHeaders  Additional headers to forward
-     * @return Response
      */
     protected function forwardRequest(
         string $url,
@@ -116,7 +113,6 @@ class ProxyService
      *
      * @param  Request  $request  The original request
      * @param  array  $additionalHeaders  Additional headers to include
-     * @return array
      */
     protected function buildHeaders(Request $request, array $additionalHeaders = []): array
     {
@@ -148,8 +144,6 @@ class ProxyService
 
     /**
      * Get the auth service URL.
-     *
-     * @return string
      */
     public function getAuthServiceUrl(): string
     {
@@ -158,8 +152,6 @@ class ProxyService
 
     /**
      * Get the IP service URL.
-     *
-     * @return string
      */
     public function getIPServiceUrl(): string
     {

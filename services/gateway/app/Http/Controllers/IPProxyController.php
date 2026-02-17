@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreIPProxyRequest;
 use App\Http\Requests\UpdateIPProxyRequest;
-use App\Http\Resources\ProxyResponseResource;
 use App\Services\IPProxyService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -24,7 +23,7 @@ use Illuminate\Http\Response;
 class IPProxyController extends Controller
 {
     /**
-     * @param IPProxyService $ipProxyService The IP proxy service
+     * @param  IPProxyService  $ipProxyService  The IP proxy service
      */
     public function __construct(
         protected IPProxyService $ipProxyService
@@ -34,7 +33,6 @@ class IPProxyController extends Controller
      * Display a paginated listing of IP addresses.
      *
      * @param  Request  $request  The HTTP request
-     * @return JsonResponse
      */
     public function index(Request $request): JsonResponse
     {
@@ -50,7 +48,6 @@ class IPProxyController extends Controller
      * Store a newly created IP address.
      *
      * @param  StoreIPProxyRequest  $request  Validated store request
-     * @return JsonResponse
      */
     public function store(StoreIPProxyRequest $request): JsonResponse
     {
@@ -67,7 +64,6 @@ class IPProxyController extends Controller
      *
      * @param  string  $id  The IP address ID
      * @param  Request  $request  The HTTP request
-     * @return JsonResponse
      */
     public function show(string $id, Request $request): JsonResponse
     {
@@ -84,7 +80,6 @@ class IPProxyController extends Controller
      *
      * @param  UpdateIPProxyRequest  $request  Validated update request
      * @param  string  $id  The IP address ID
-     * @return JsonResponse
      */
     public function update(UpdateIPProxyRequest $request, string $id): JsonResponse
     {
@@ -101,7 +96,6 @@ class IPProxyController extends Controller
      *
      * @param  string  $id  The IP address ID
      * @param  Request  $request  The HTTP request
-     * @return JsonResponse
      */
     public function destroy(string $id, Request $request): JsonResponse
     {
@@ -118,11 +112,26 @@ class IPProxyController extends Controller
      *
      * @param  string  $id  The IP address ID
      * @param  Request  $request  The HTTP request
-     * @return JsonResponse
      */
     public function history(string $id, Request $request): JsonResponse
     {
         $response = $this->ipProxyService->getIPAddressHistory($id, $request);
+
+        return response()->json(
+            $response->json(),
+            $response->status()
+        );
+    }
+
+    /**
+     * Get the audit log for a specific IP address.
+     *
+     * @param  string  $id  The IP address ID
+     * @param  Request  $request  The HTTP request
+     */
+    public function audit(string $id, Request $request): JsonResponse
+    {
+        $response = $this->ipProxyService->getIPAddressAudit($id, $request);
 
         return response()->json(
             $response->json(),

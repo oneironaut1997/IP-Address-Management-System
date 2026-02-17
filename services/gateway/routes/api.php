@@ -53,6 +53,10 @@ Route::middleware('jwt')->group(function () {
     Route::patch('ip/{id}', [IPProxyController::class, 'update']);
     Route::delete('ip/{id}', [IPProxyController::class, 'destroy']);
     Route::get('ip/{id}/history', [IPProxyController::class, 'history']);
+    Route::get('ip/{id}/audit', [IPProxyController::class, 'audit']);
+    // Wildcard route for nested resources (e.g., /api/ip/{id}/history/filter)
+    Route::match(['get', 'post', 'put', 'patch', 'delete'], 'ip/{path}', [IPProxyController::class, 'handle'])
+        ->where('path', '.*');
 });
 
 /*

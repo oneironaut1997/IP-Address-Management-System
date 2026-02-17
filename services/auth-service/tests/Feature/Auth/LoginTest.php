@@ -2,9 +2,12 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Events\UserLoggedIn;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Redis;
 use Tests\TestCase;
 
 /**
@@ -21,11 +24,19 @@ class LoginTest extends TestCase
      */
     public function test_user_can_login_with_valid_credentials(): void
     {
+        // Fake events to avoid Spatie Activity Log issues
+        Event::fake([UserLoggedIn::class]);
+
         $user = User::create([
             'email' => 'test@example.com',
             'password' => Hash::make('Password123!'),
             'role' => 'regular',
         ]);
+
+        // Mock Redis for login
+        Redis::shouldReceive('setex')->andReturn(true);
+        Redis::shouldReceive('sadd')->andReturn(1);
+        Redis::shouldReceive('expire')->andReturn(true);
 
         $response = $this->postJson('/api/auth/login', [
             'email' => 'test@example.com',
@@ -127,11 +138,19 @@ class LoginTest extends TestCase
      */
     public function test_login_creates_user_session(): void
     {
+        // Fake events to avoid Spatie Activity Log issues
+        Event::fake([UserLoggedIn::class]);
+
         $user = User::create([
             'email' => 'test@example.com',
             'password' => Hash::make('Password123!'),
             'role' => 'regular',
         ]);
+
+        // Mock Redis for login
+        Redis::shouldReceive('setex')->andReturn(true);
+        Redis::shouldReceive('sadd')->andReturn(1);
+        Redis::shouldReceive('expire')->andReturn(true);
 
         $this->postJson('/api/auth/login', [
             'email' => 'test@example.com',
@@ -148,11 +167,19 @@ class LoginTest extends TestCase
      */
     public function test_super_admin_can_login(): void
     {
+        // Fake events to avoid Spatie Activity Log issues
+        Event::fake([UserLoggedIn::class]);
+
         $user = User::create([
             'email' => 'admin@example.com',
             'password' => Hash::make('AdminPass123!'),
             'role' => 'super_admin',
         ]);
+
+        // Mock Redis for login
+        Redis::shouldReceive('setex')->andReturn(true);
+        Redis::shouldReceive('sadd')->andReturn(1);
+        Redis::shouldReceive('expire')->andReturn(true);
 
         $response = $this->postJson('/api/auth/login', [
             'email' => 'admin@example.com',

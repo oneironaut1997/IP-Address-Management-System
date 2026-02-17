@@ -73,7 +73,7 @@ class IPProxyTest extends TestCase
         ]);
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
+            'Authorization' => 'Bearer '.$token,
         ])->getJson('/api/ip');
 
         $response->assertStatus(200)
@@ -106,7 +106,7 @@ class IPProxyTest extends TestCase
         ]);
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
+            'Authorization' => 'Bearer '.$token,
         ])->getJson('/api/ip', [
             'search' => '192.168',
             'status' => 'active',
@@ -129,9 +129,9 @@ class IPProxyTest extends TestCase
                 'success' => true,
                 'data' => [
                     'id' => 'new-ip-uuid',
-                    'address' => '192.168.1.1',
-                    'name' => 'Test IP',
-                    'description' => 'Test description',
+                    'ip_address' => '192.168.1.1',
+                    'label' => 'Test IP',
+                    'comment' => 'Test description',
                 ],
             ], 201),
         ]);
@@ -142,16 +142,16 @@ class IPProxyTest extends TestCase
         ]);
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
+            'Authorization' => 'Bearer '.$token,
         ])->postJson('/api/ip', [
-            'address' => '192.168.1.1',
-            'name' => 'Test IP',
-            'description' => 'Test description',
+            'ip_address' => '192.168.1.1',
+            'label' => 'Test IP',
+            'comment' => 'Test description',
         ]);
 
         $response->assertStatus(201)
             ->assertJsonPath('success', true)
-            ->assertJsonPath('data.address', '192.168.1.1');
+            ->assertJsonPath('data.ip_address', '192.168.1.1');
     }
 
     /**
@@ -176,7 +176,7 @@ class IPProxyTest extends TestCase
         ]);
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
+            'Authorization' => 'Bearer '.$token,
         ])->postJson('/api/ip', []);
 
         $this->assertTrue(in_array($response->getStatusCode(), [400, 422, 500]));
@@ -205,7 +205,7 @@ class IPProxyTest extends TestCase
         ]);
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
+            'Authorization' => 'Bearer '.$token,
         ])->getJson('/api/ip/ip-uuid');
 
         $response->assertStatus(200)
@@ -235,7 +235,7 @@ class IPProxyTest extends TestCase
         ]);
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
+            'Authorization' => 'Bearer '.$token,
         ])->getJson('/api/ip/non-existent');
 
         $response->assertStatus(404)
@@ -266,7 +266,7 @@ class IPProxyTest extends TestCase
         ]);
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
+            'Authorization' => 'Bearer '.$token,
         ])->putJson('/api/ip/ip-uuid', [
             'name' => 'Updated IP Name',
             'description' => 'Updated description',
@@ -300,7 +300,7 @@ class IPProxyTest extends TestCase
         ]);
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
+            'Authorization' => 'Bearer '.$token,
         ])->patchJson('/api/ip/ip-uuid', [
             'name' => 'Partially Updated IP',
         ]);
@@ -330,7 +330,7 @@ class IPProxyTest extends TestCase
         ]);
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
+            'Authorization' => 'Bearer '.$token,
         ])->deleteJson('/api/ip/ip-uuid');
 
         $response->assertStatus(200)
@@ -358,7 +358,7 @@ class IPProxyTest extends TestCase
         ]);
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
+            'Authorization' => 'Bearer '.$token,
         ])->getJson('/api/ip/ip-uuid/history');
 
         $response->assertStatus(200)
@@ -386,7 +386,7 @@ class IPProxyTest extends TestCase
         ]);
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
+            'Authorization' => 'Bearer '.$token,
         ])->getJson('/api/ip/ip-uuid/audit');
 
         $response->assertStatus(200)
@@ -412,7 +412,7 @@ class IPProxyTest extends TestCase
         ]);
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
+            'Authorization' => 'Bearer '.$token,
         ])->getJson('/api/ip/ip-uuid/history/filter');
 
         $response->assertStatus(200);
@@ -444,7 +444,7 @@ class IPProxyTest extends TestCase
         ]);
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
+            'Authorization' => 'Bearer '.$token,
         ])->getJson('/api/ip');
 
         // The gateway should forward these headers to ip-management service
@@ -470,21 +470,36 @@ class IPProxyTest extends TestCase
      */
     public function test_ip_routes_reject_expired_tokens(): void
     {
-        // Create an expired token
-        $token = $this->generateValidToken([], [
-            'exp' => now()->subHour()->timestamp,
-        ]);
+        // Create an expired token by using the JWT provider directly
+        $user = \App\Models\User::factory()->create();
+
+        // Build the payload with an expired exp claim
+        $payload = [
+            'iss' => config('app.url'),
+            'iat' => now()->subHours(2)->timestamp,
+            'exp' => now()->subHour()->timestamp,  // Expired 1 hour ago
+            'nbf' => now()->subHours(2)->timestamp,
+            'sub' => $user->id,
+            'jti' => bin2hex(random_bytes(16)),
+            'role' => 'regular',
+            'email' => $user->email,
+        ];
+
+        // Encode the token directly using the JWT provider
+        $provider = app(\Tymon\JWTAuth\Providers\JWT\Lcobucci::class);
+        $token = $provider->encode($payload);
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
+            'Authorization' => 'Bearer '.$token,
         ])->postJson('/api/ip', [
-            'address' => '192.168.1.1',
+            'ip_address' => '192.168.1.1',
+            'label' => 'Test IP',
         ]);
 
         // Should reject expired token (401) or fail if service unavailable (502)
         $this->assertTrue(
             in_array($response->getStatusCode(), [401, 500, 502]),
-            'Expected 401, 500, or 502, got ' . $response->getStatusCode()
+            'Expected 401, 500, or 502, got '.$response->getStatusCode()
         );
     }
 
@@ -510,7 +525,7 @@ class IPProxyTest extends TestCase
         ]);
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
+            'Authorization' => 'Bearer '.$token,
         ])->getJson('/api/ip');
 
         $response->assertStatus(503)
@@ -543,7 +558,7 @@ class IPProxyTest extends TestCase
         ]);
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
+            'Authorization' => 'Bearer '.$token,
         ])->getJson('/api/ip');
 
         $response->assertStatus(200)

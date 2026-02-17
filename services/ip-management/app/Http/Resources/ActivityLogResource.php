@@ -16,7 +16,6 @@ class ActivityLogResource extends JsonResource
     /**
      * Transform the resource into an array.
      *
-     * @param  Request  $request
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
@@ -67,6 +66,7 @@ class ActivityLogResource extends JsonResource
 
         // Extract just the class name from the full namespace
         $parts = explode('\\', $subjectType);
+
         return end($parts);
     }
 }

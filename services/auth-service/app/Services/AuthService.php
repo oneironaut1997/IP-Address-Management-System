@@ -132,7 +132,6 @@ class AuthService
      *
      * @param  User  $user  The authenticated user
      * @param  string|null  $jti  The JWT ID from the current token
-     * @return void
      */
     public function logout(User $user, ?string $jti = null): void
     {

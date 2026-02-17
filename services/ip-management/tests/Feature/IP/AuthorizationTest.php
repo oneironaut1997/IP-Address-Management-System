@@ -37,10 +37,10 @@ class AuthorizationTest extends TestCase
             'type' => 'ipv4',
         ]);
 
-        $response = $this->getJson('/api/ip', [
+        $response = $this->withHeaders([
             'X-User-ID' => $user1Id,
             'X-User-Role' => 'regular',
-        ]);
+        ])->getJson('/api/ip');
 
         $response->assertStatus(200)
             ->assertJsonCount(2, 'data');
@@ -55,23 +55,23 @@ class AuthorizationTest extends TestCase
         $adminUserId = 'admin-456';
 
         // Regular user can create
-        $response1 = $this->postJson('/api/ip', [
-            'ip_address' => '192.168.1.1',
-            'label' => 'Regular User IP',
-        ], [
+        $response1 = $this->withHeaders([
             'X-User-ID' => $regularUserId,
             'X-User-Role' => 'regular',
+        ])->postJson('/api/ip', [
+            'ip_address' => '192.168.1.1',
+            'label' => 'Regular User IP',
         ]);
 
         $response1->assertStatus(201);
 
         // Admin user can create
-        $response2 = $this->postJson('/api/ip', [
-            'ip_address' => '192.168.1.2',
-            'label' => 'Admin User IP',
-        ], [
+        $response2 = $this->withHeaders([
             'X-User-ID' => $adminUserId,
             'X-User-Role' => 'super_admin',
+        ])->postJson('/api/ip', [
+            'ip_address' => '192.168.1.2',
+            'label' => 'Admin User IP',
         ]);
 
         $response2->assertStatus(201);
@@ -94,11 +94,11 @@ class AuthorizationTest extends TestCase
         ]);
 
         // Owner can update
-        $response1 = $this->putJson("/api/ip/{$ip->id}", [
-            'label' => 'Owner Updated',
-        ], [
+        $response1 = $this->withHeaders([
             'X-User-ID' => $ownerId,
             'X-User-Role' => 'regular',
+        ])->putJson("/api/ip/{$ip->id}", [
+            'label' => 'Owner Updated',
         ]);
         $response1->assertStatus(200);
 
@@ -106,20 +106,20 @@ class AuthorizationTest extends TestCase
         $ip->update(['label' => 'Original Label']);
 
         // Other regular user cannot update
-        $response2 = $this->putJson("/api/ip/{$ip->id}", [
-            'label' => 'Other User Updated',
-        ], [
+        $response2 = $this->withHeaders([
             'X-User-ID' => $otherUserId,
             'X-User-Role' => 'regular',
+        ])->putJson("/api/ip/{$ip->id}", [
+            'label' => 'Other User Updated',
         ]);
         $response2->assertStatus(403);
 
         // Admin can update any IP
-        $response3 = $this->putJson("/api/ip/{$ip->id}", [
-            'label' => 'Admin Updated',
-        ], [
+        $response3 = $this->withHeaders([
             'X-User-ID' => $adminId,
             'X-User-Role' => 'super_admin',
+        ])->putJson("/api/ip/{$ip->id}", [
+            'label' => 'Admin Updated',
         ]);
         $response3->assertStatus(200);
     }
@@ -141,24 +141,24 @@ class AuthorizationTest extends TestCase
         ]);
 
         // Owner cannot delete
-        $response1 = $this->deleteJson("/api/ip/{$ip->id}", [], [
+        $response1 = $this->withHeaders([
             'X-User-ID' => $ownerId,
             'X-User-Role' => 'regular',
-        ]);
+        ])->deleteJson("/api/ip/{$ip->id}");
         $response1->assertStatus(403);
 
         // Other regular user cannot delete
-        $response2 = $this->deleteJson("/api/ip/{$ip->id}", [], [
+        $response2 = $this->withHeaders([
             'X-User-ID' => $otherUserId,
             'X-User-Role' => 'regular',
-        ]);
+        ])->deleteJson("/api/ip/{$ip->id}");
         $response2->assertStatus(403);
 
         // Admin can delete
-        $response3 = $this->deleteJson("/api/ip/{$ip->id}", [], [
+        $response3 = $this->withHeaders([
             'X-User-ID' => $adminId,
             'X-User-Role' => 'super_admin',
-        ]);
+        ])->deleteJson("/api/ip/{$ip->id}");
         $response3->assertStatus(204);
     }
 
@@ -178,10 +178,10 @@ class AuthorizationTest extends TestCase
         ]);
 
         // User 2 (not owner) can view history
-        $response = $this->getJson("/api/ip/{$ip->id}/history", [
+        $response = $this->withHeaders([
             'X-User-ID' => $user2Id,
             'X-User-Role' => 'regular',
-        ]);
+        ])->getJson("/api/ip/{$ip->id}/history");
 
         $response->assertStatus(200);
     }

@@ -20,7 +20,6 @@ class AuthProxyService extends ProxyService
      * Proxy user login request to auth-service.
      *
      * @param  Request  $request  The HTTP request containing email and password
-     * @return Response
      */
     public function login(Request $request): Response
     {
@@ -31,7 +30,6 @@ class AuthProxyService extends ProxyService
      * Proxy user registration request to auth-service.
      *
      * @param  Request  $request  The HTTP request containing user registration data
-     * @return Response
      */
     public function register(Request $request): Response
     {
@@ -42,7 +40,6 @@ class AuthProxyService extends ProxyService
      * Proxy token refresh request to auth-service.
      *
      * @param  Request  $request  The HTTP request with Authorization header
-     * @return Response
      */
     public function refreshToken(Request $request): Response
     {
@@ -53,7 +50,6 @@ class AuthProxyService extends ProxyService
      * Proxy logout request to auth-service.
      *
      * @param  Request  $request  The HTTP request with Authorization header and user context
-     * @return Response
      */
     public function logout(Request $request): Response
     {
@@ -64,7 +60,6 @@ class AuthProxyService extends ProxyService
      * Proxy user info request to auth-service.
      *
      * @param  Request  $request  The HTTP request with Authorization header and user context
-     * @return Response
      */
     public function getUserInfo(Request $request): Response
     {
@@ -75,7 +70,6 @@ class AuthProxyService extends ProxyService
      * Get audit logs from auth-service.
      *
      * @param  Request  $request  The HTTP request with query parameters
-     * @return Response
      */
     public function getAuditLogs(Request $request): Response
     {
@@ -115,6 +109,7 @@ class AuthProxyService extends ProxyService
                 // Add type field to auth logs
                 $authLogs = array_map(function ($log) {
                     $log['type'] = 'auth';
+
                     return $log;
                 }, $authLogs);
             }
@@ -136,6 +131,7 @@ class AuthProxyService extends ProxyService
         usort($allLogs, function ($a, $b) {
             $dateA = strtotime($a['created_at'] ?? 0);
             $dateB = strtotime($b['created_at'] ?? 0);
+
             return $dateB - $dateA;
         });
 
@@ -164,7 +160,6 @@ class AuthProxyService extends ProxyService
      * Get IP management activity logs.
      *
      * @param  Request  $request  The HTTP request with query parameters
-     * @return Response
      */
     public function getIPActivities(Request $request): Response
     {

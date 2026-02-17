@@ -23,7 +23,7 @@ use Illuminate\Http\Response;
 class AuditController extends Controller
 {
     /**
-     * @param AuditService $auditService The audit service
+     * @param  AuditService  $auditService  The audit service
      */
     public function __construct(
         protected AuditService $auditService
@@ -67,7 +67,7 @@ class AuditController extends Controller
     {
         $log = $this->auditService->getAuditLogById($id);
 
-        if (!$log) {
+        if (! $log) {
             return response()->json([
                 'success' => false,
                 'error' => [

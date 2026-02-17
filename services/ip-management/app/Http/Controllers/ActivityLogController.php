@@ -22,7 +22,7 @@ use Illuminate\Http\Request;
 class ActivityLogController extends Controller
 {
     /**
-     * @param ActivityLogService $activityLogService The activity log service
+     * @param  ActivityLogService  $activityLogService  The activity log service
      */
     public function __construct(
         protected ActivityLogService $activityLogService

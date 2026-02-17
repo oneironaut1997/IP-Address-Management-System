@@ -30,10 +30,10 @@ class DeleteIPTest extends TestCase
             'type' => 'ipv4',
         ]);
 
-        $response = $this->deleteJson("/api/ip/{$ip->id}", [], [
+        $response = $this->withHeaders([
             'X-User-ID' => $adminId,
             'X-User-Role' => 'super_admin',
-        ]);
+        ])->deleteJson("/api/ip/{$ip->id}");
 
         $response->assertStatus(204);
 
@@ -61,10 +61,10 @@ class DeleteIPTest extends TestCase
             'type' => 'ipv4',
         ]);
 
-        $response = $this->deleteJson("/api/ip/{$ip->id}", [], [
+        $response = $this->withHeaders([
             'X-User-ID' => $ownerId,
             'X-User-Role' => 'regular',
-        ]);
+        ])->deleteJson("/api/ip/{$ip->id}");
 
         $response->assertStatus(403)
             ->assertJson([
@@ -89,10 +89,10 @@ class DeleteIPTest extends TestCase
     {
         $adminId = 'admin-456';
 
-        $response = $this->deleteJson('/api/ip/non-existent-id', [], [
+        $response = $this->withHeaders([
             'X-User-ID' => $adminId,
             'X-User-Role' => 'super_admin',
-        ]);
+        ])->deleteJson('/api/ip/non-existent-id');
 
         $response->assertStatus(404)
             ->assertJson([
@@ -118,10 +118,10 @@ class DeleteIPTest extends TestCase
             'type' => 'ipv4',
         ]);
 
-        $this->deleteJson("/api/ip/{$ip->id}", [], [
+        $this->withHeaders([
             'X-User-ID' => $adminId,
             'X-User-Role' => 'super_admin',
-        ]);
+        ])->deleteJson("/api/ip/{$ip->id}");
 
         // Check history was created
         $this->assertDatabaseHas('ip_history', [
