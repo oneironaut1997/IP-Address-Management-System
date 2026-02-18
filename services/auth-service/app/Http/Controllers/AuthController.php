@@ -28,21 +28,6 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 class AuthController extends Controller
 {
     /**
-     * Cookie configuration constants
-     */
-    private const ACCESS_TOKEN_COOKIE = 'access_token';
-
-    private const REFRESH_TOKEN_COOKIE = 'refresh_token';
-
-    private const COOKIE_PATH = '/';
-
-    private const COOKIE_DOMAIN = null; // Use default domain
-
-    private const ACCESS_TOKEN_TTL = 60; // minutes
-
-    private const REFRESH_TOKEN_TTL = 10080; // minutes (7 days)
-
-    /**
      * @param  AuthService  $authService  The authentication service
      */
     public function __construct(
@@ -75,7 +60,7 @@ class AuthController extends Controller
      * Authenticate a user and issue JWT tokens.
      *
      * Validates credentials and generates both access and refresh tokens.
-     * Sets tokens as httpOnly secure cookies for enhanced security.
+     * Tokens are returned in the JSON response for localStorage storage.
      *
      * @param  LoginRequest  $request  Validated login request
      */
@@ -96,32 +81,20 @@ class AuthController extends Controller
             ], Response::HTTP_UNAUTHORIZED);
         }
 
-        $cookies = $this->createTokenCookies(
-            $result['tokens']['access_token'],
-            $result['tokens']['refresh_token']
-        );
-
-        $response = response()->json(
+        return response()->json(
             new AuthResponseResource([
                 'user' => $result['user'],
                 'tokens' => $result['tokens'],
                 'message' => 'Login successful',
             ])
         );
-
-        // Attach cookies to response
-        foreach ($cookies as $cookie) {
-            $response->withCookie($cookie);
-        }
-
-        return $response;
     }
 
     /**
      * Logout the authenticated user.
      *
      * Invalidates the current access token and removes the associated
-     * refresh token from Redis. Also clears authentication cookies.
+     * refresh token from Redis.
      *
      * @param  Request  $request  The HTTP request
      */
@@ -144,28 +117,24 @@ class AuthController extends Controller
             }
         }
 
-        $response = response()->json([
+        return response()->json([
             'success' => true,
             'message' => 'Logged out successfully',
         ]);
-
-        // Clear authentication cookies
-        return $this->clearTokenCookies($response);
     }
 
     /**
      * Refresh the access token using a refresh token.
      *
      * Validates the refresh token, generates new token pair,
-     * implements token rotation, and sets new httpOnly cookies.
+     * implements token rotation. Tokens are returned in the JSON response.
      *
-     * @param  Request  $request  The HTTP request with refresh token
+     * @param  Request  $request  The HTTP request with refresh token in header
      */
     public function refresh(Request $request): JsonResponse
     {
-        // Try to get refresh token from cookie first, then from header
-        $refreshToken = $request->cookie(self::REFRESH_TOKEN_COOKIE)
-            ?? $this->authService->extractBearerToken($request);
+        // Get refresh token from Authorization header (Bearer token)
+        $refreshToken = $this->authService->extractBearerToken($request);
 
         if (! $refreshToken) {
             return response()->json([
@@ -186,23 +155,11 @@ class AuthController extends Controller
             ], Response::HTTP_UNAUTHORIZED);
         }
 
-        $cookies = $this->createTokenCookies(
-            $result['tokens']['access_token'],
-            $result['tokens']['refresh_token']
-        );
-
-        $response = response()->json([
+        return response()->json([
             'success' => true,
             'message' => 'Token refreshed successfully',
             'data' => (new AuthTokenResource($result['tokens']))->toArray($request),
         ]);
-
-        // Attach cookies to response
-        foreach ($cookies as $cookie) {
-            $response->withCookie($cookie);
-        }
-
-        return $response;
     }
 
     /**
@@ -220,83 +177,5 @@ class AuthController extends Controller
                 'user' => (new UserResource($user))->toArray(request()),
             ],
         ]);
-    }
-
-    /**
-     * Create httpOnly secure cookies for tokens.
-     *
-     * @param  string  $accessToken  The JWT access token
-     * @param  string  $refreshToken  The JWT refresh token
-     * @return array Array of cookie instances
-     */
-    private function createTokenCookies(string $accessToken, string $refreshToken): array
-    {
-        $isSecure = config('app.env') === 'production';
-
-        return [
-            cookie(
-                self::ACCESS_TOKEN_COOKIE,
-                $accessToken,
-                self::ACCESS_TOKEN_TTL,
-                self::COOKIE_PATH,
-                self::COOKIE_DOMAIN,
-                $isSecure,
-                true, // httpOnly - JavaScript cannot access
-                false,
-                'Lax' // SameSite policy
-            ),
-            cookie(
-                self::REFRESH_TOKEN_COOKIE,
-                $refreshToken,
-                self::REFRESH_TOKEN_TTL,
-                self::COOKIE_PATH,
-                self::COOKIE_DOMAIN,
-                $isSecure,
-                true, // httpOnly - JavaScript cannot access
-                false,
-                'Lax' // SameSite policy
-            ),
-        ];
-    }
-
-    /**
-     * Clear authentication cookies.
-     *
-     * @param  \Illuminate\Http\JsonResponse  $response  The response to attach cookies to
-     */
-    private function clearTokenCookies(JsonResponse $response): JsonResponse
-    {
-        $isSecure = config('app.env') === 'production';
-
-        $cookies = [
-            cookie(
-                self::ACCESS_TOKEN_COOKIE,
-                '',
-                -1, // Expire immediately
-                self::COOKIE_PATH,
-                self::COOKIE_DOMAIN,
-                $isSecure,
-                true,
-                false,
-                'Lax'
-            ),
-            cookie(
-                self::REFRESH_TOKEN_COOKIE,
-                '',
-                -1, // Expire immediately
-                self::COOKIE_PATH,
-                self::COOKIE_DOMAIN,
-                $isSecure,
-                true,
-                false,
-                'Lax'
-            ),
-        ];
-
-        foreach ($cookies as $cookie) {
-            $response->withCookie($cookie);
-        }
-
-        return $response;
     }
 }

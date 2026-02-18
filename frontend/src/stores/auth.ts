@@ -4,9 +4,8 @@
  * Pinia store for managing authentication state and operations.
  * Uses the Composition API (setup stores) pattern.
  *
- * SECURITY: This store uses httpOnly cookies for token storage.
- * User data is fetched from the server on each request to ensure
- * data consistency and security.
+ * SECURITY: This store uses localStorage for token storage.
+ * Tokens are stored and sent via Authorization header with Bearer scheme.
  *
  * @package Stores
  */
@@ -16,6 +15,35 @@ import { defineStore } from 'pinia'
 import axios from 'axios'
 import api from '@/api/client'
 import type { User, LoginCredentials, RegistrationData, AuthResponse, APIResponse, APIError } from '@/types'
+
+/**
+ * Storage keys for authentication tokens
+ */
+const ACCESS_TOKEN_KEY = 'access_token'
+const REFRESH_TOKEN_KEY = 'refresh_token'
+
+/**
+ * Store tokens in localStorage
+ */
+function setTokens(tokens: AuthResponse): void {
+  localStorage.setItem(ACCESS_TOKEN_KEY, tokens.access_token)
+  localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refresh_token)
+}
+
+/**
+ * Clear tokens from localStorage
+ */
+function clearTokens(): void {
+  localStorage.removeItem(ACCESS_TOKEN_KEY)
+  localStorage.removeItem(REFRESH_TOKEN_KEY)
+}
+
+/**
+ * Get access token from localStorage
+ */
+function getAccessToken(): string | null {
+  return localStorage.getItem(ACCESS_TOKEN_KEY)
+}
 
 /**
  * Extract user-friendly error message from API errors
@@ -67,9 +95,8 @@ function extractErrorMessage(err: unknown, defaultMessage: string): string {
  * - Role-based permissions
  * - Login/logout operations
  *
- * NOTE: Tokens are handled via httpOnly cookies.
+ * NOTE: Tokens are stored in localStorage and sent via Authorization header.
  * User data is fetched from the server on each request.
- * No localStorage is used for security reasons.
  */
 export const useAuthStore = defineStore('auth', () => {
   // State - only in memory, never persisted
@@ -94,11 +121,16 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
 
     try {
-      // Post to login endpoint - cookies will be set by the backend
+      // Post to login endpoint - tokens returned in response
       const { data } = await api.post<APIResponse<AuthResponse>>('/auth/login', credentials)
 
       if (!data.success) {
         throw new Error(data.error?.message || 'Login failed')
+      }
+
+      // Store tokens in localStorage
+      if (data.data) {
+        setTokens(data.data)
       }
 
       // Fetch user info after successful login
@@ -158,7 +190,7 @@ export const useAuthStore = defineStore('auth', () => {
    * Logout the current user
    *
    * Calls the logout endpoint and clears local state.
-   * The backend will clear the httpOnly cookies.
+   * Also clears tokens from localStorage.
    */
   async function logout(): Promise<void> {
     try {
@@ -176,12 +208,11 @@ export const useAuthStore = defineStore('auth', () => {
   /**
    * Clear authentication state
    *
-   * Removes user data from memory only.
-   * Note: Token cookies are cleared by the backend.
+   * Removes user data from memory and tokens from localStorage.
    */
   function clearAuthState(): void {
     user.value = null
-    // No localStorage to clear - user data not persisted
+    clearTokens()
   }
 
   /**

@@ -19,14 +19,26 @@ trait InteractsWithUserContext
     /**
      * Extract user context from the request.
      *
-     * Gets user from Laravel Auth guard (populated by auth:api middleware).
+     * Gets user from:
+     * 1. Request attributes (set by StatelessJwtAuth middleware)
+     * 2. Laravel Auth guard (populated by auth:api middleware)
      *
      * @param  Request  $request  The HTTP request
      * @return array{user_id: string|null, role: string, email: string|null}
      */
     protected function getUserContext(Request $request): array
     {
-        // Get user from Laravel Auth guard
+        // First, check request attributes (set by StatelessJwtAuth middleware)
+        $userId = $request->attributes->get('user_id');
+        if ($userId) {
+            return [
+                'user_id' => $userId,
+                'role' => $request->attributes->get('user_role', 'regular'),
+                'email' => $request->attributes->get('user_email'),
+            ];
+        }
+
+        // Fallback to Laravel Auth guard
         $authUser = \Illuminate\Support\Facades\Auth::user();
         if ($authUser) {
             return [

@@ -41,7 +41,7 @@ class AuthProxyPublicTest extends TestCase
     {
         // Mock auth-service response - use wildcard pattern
         Http::fake([
-            'http://auth-service:8000/api/auth/*' => Http::response([
+            'http://auth-service:8000/api/v1/auth/*' => Http::response([
                 'success' => true,
                 'data' => [
                     'access_token' => 'test-token',
@@ -51,7 +51,7 @@ class AuthProxyPublicTest extends TestCase
             ], 200),
         ]);
 
-        $response = $this->postJson('/api/auth/login', [
+        $response = $this->postJson('/api/v1/auth/login', [
             'email' => 'test@example.com',
             'password' => 'password123',
         ]);
@@ -68,7 +68,7 @@ class AuthProxyPublicTest extends TestCase
     {
         // Mock auth-service response - use wildcard pattern
         Http::fake([
-            'http://auth-service:8000/api/auth/*' => Http::response([
+            'http://auth-service:8000/api/v1/auth/*' => Http::response([
                 'success' => true,
                 'data' => [
                     'user' => [
@@ -80,7 +80,7 @@ class AuthProxyPublicTest extends TestCase
             ], 201),
         ]);
 
-        $response = $this->postJson('/api/auth/register', [
+        $response = $this->postJson('/api/v1/auth/register', [
             'name' => 'Test User',
             'email' => 'test@example.com',
             'password' => 'password123',
@@ -99,7 +99,7 @@ class AuthProxyPublicTest extends TestCase
     {
         // Mock auth-service response - use wildcard pattern
         Http::fake([
-            'http://auth-service:8000/api/auth/*' => Http::response([
+            'http://auth-service:8000/api/v1/auth/*' => Http::response([
                 'success' => true,
                 'data' => [
                     'access_token' => 'new-token',
@@ -111,7 +111,7 @@ class AuthProxyPublicTest extends TestCase
 
         $response = $this->withHeaders([
             'Authorization' => 'Bearer valid.refresh.token',
-        ])->postJson('/api/auth/refresh');
+        ])->postJson('/api/v1/auth/refresh');
 
         // Should proxy to auth-service and return success
         $response->assertStatus(200)
@@ -125,7 +125,7 @@ class AuthProxyPublicTest extends TestCase
     {
         // Mock auth-service validation error response - use wildcard pattern
         Http::fake([
-            'http://auth-service:8000/api/auth/*' => Http::response([
+            'http://auth-service:8000/api/v1/auth/*' => Http::response([
                 'success' => false,
                 'error' => [
                     'code' => 'VALIDATION_ERROR',
@@ -134,7 +134,7 @@ class AuthProxyPublicTest extends TestCase
             ], 422),
         ]);
 
-        $response = $this->postJson('/api/auth/login', [
+        $response = $this->postJson('/api/v1/auth/login', [
             'password' => 'password123',
         ]);
 
@@ -149,7 +149,7 @@ class AuthProxyPublicTest extends TestCase
     {
         // Mock auth-service validation error response - use wildcard pattern
         Http::fake([
-            'http://auth-service:8000/api/auth/*' => Http::response([
+            'http://auth-service:8000/api/v1/auth/*' => Http::response([
                 'success' => false,
                 'error' => [
                     'code' => 'VALIDATION_ERROR',
@@ -158,7 +158,7 @@ class AuthProxyPublicTest extends TestCase
             ], 422),
         ]);
 
-        $response = $this->postJson('/api/auth/login', [
+        $response = $this->postJson('/api/v1/auth/login', [
             'email' => 'test@example.com',
         ]);
 
@@ -173,7 +173,7 @@ class AuthProxyPublicTest extends TestCase
     {
         // Mock auth-service validation error response - use wildcard pattern
         Http::fake([
-            'http://auth-service:8000/api/auth/*' => Http::response([
+            'http://auth-service:8000/api/v1/auth/*' => Http::response([
                 'success' => false,
                 'error' => [
                     'code' => 'VALIDATION_ERROR',
@@ -182,7 +182,7 @@ class AuthProxyPublicTest extends TestCase
             ], 422),
         ]);
 
-        $response = $this->postJson('/api/auth/register', [
+        $response = $this->postJson('/api/v1/auth/register', [
             'email' => 'test@example.com',
             'password' => 'password123',
             'password_confirmation' => 'password123',
@@ -199,7 +199,7 @@ class AuthProxyPublicTest extends TestCase
     {
         // Mock auth-service validation error response - use wildcard pattern
         Http::fake([
-            'http://auth-service:8000/api/auth/*' => Http::response([
+            'http://auth-service:8000/api/v1/auth/*' => Http::response([
                 'success' => false,
                 'error' => [
                     'code' => 'VALIDATION_ERROR',
@@ -208,7 +208,7 @@ class AuthProxyPublicTest extends TestCase
             ], 422),
         ]);
 
-        $response = $this->postJson('/api/auth/register', [
+        $response = $this->postJson('/api/v1/auth/register', [
             'name' => 'Test User',
             'email' => 'invalid-email',
             'password' => 'password123',
@@ -226,7 +226,7 @@ class AuthProxyPublicTest extends TestCase
     {
         // Mock auth-service validation error response - use wildcard pattern
         Http::fake([
-            'http://auth-service:8000/api/auth/*' => Http::response([
+            'http://auth-service:8000/api/v1/auth/*' => Http::response([
                 'success' => false,
                 'error' => [
                     'code' => 'VALIDATION_ERROR',
@@ -235,7 +235,7 @@ class AuthProxyPublicTest extends TestCase
             ], 422),
         ]);
 
-        $response = $this->postJson('/api/auth/register', [
+        $response = $this->postJson('/api/v1/auth/register', [
             'name' => 'Test User',
             'email' => 'test@example.com',
             'password' => 'password123',
@@ -253,7 +253,7 @@ class AuthProxyPublicTest extends TestCase
     {
         // Mock auth-service error response - use wildcard pattern
         Http::fake([
-            'http://auth-service:8000/api/auth/*' => Http::response([
+            'http://auth-service:8000/api/v1/auth/*' => Http::response([
                 'success' => false,
                 'error' => [
                     'code' => 'INVALID_CREDENTIALS',
@@ -262,7 +262,7 @@ class AuthProxyPublicTest extends TestCase
             ], 401),
         ]);
 
-        $response = $this->postJson('/api/auth/login', [
+        $response = $this->postJson('/api/v1/auth/login', [
             'email' => 'wrong@example.com',
             'password' => 'wrongpassword',
         ]);
@@ -288,7 +288,7 @@ class AuthProxyPublicTest extends TestCase
             ], 503),
         ]);
 
-        $response = $this->postJson('/api/auth/login', [
+        $response = $this->postJson('/api/v1/auth/login', [
             'email' => 'test@example.com',
             'password' => 'password123',
         ]);

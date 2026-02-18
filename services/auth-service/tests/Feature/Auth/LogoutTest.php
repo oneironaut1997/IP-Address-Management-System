@@ -40,7 +40,7 @@ class LogoutTest extends TestCase
         Redis::shouldReceive('smembers')->andReturn([]);
         Redis::shouldReceive('del')->andReturn(1);
 
-        $response = $this->postJson('/api/auth/logout', [], [
+        $response = $this->postJson('/api/v1/auth/logout', [], [
             'Authorization' => 'Bearer '.$token,
         ]);
 
@@ -56,7 +56,7 @@ class LogoutTest extends TestCase
      */
     public function test_logout_without_token_fails(): void
     {
-        $response = $this->postJson('/api/auth/logout');
+        $response = $this->postJson('/api/v1/auth/logout');
 
         $response->assertStatus(401);
     }
@@ -66,7 +66,7 @@ class LogoutTest extends TestCase
      */
     public function test_logout_with_invalid_token_fails(): void
     {
-        $response = $this->postJson('/api/auth/logout', [], [
+        $response = $this->postJson('/api/v1/auth/logout', [], [
             'Authorization' => 'Bearer invalid_token',
         ]);
 
@@ -87,12 +87,12 @@ class LogoutTest extends TestCase
     //     $token = JWTAuth::fromUser($user);
 
     //     // Logout
-    //     $this->postJson('/api/auth/logout', [], [
+    //     $this->postJson('/api/v1/auth/logout', [], [
     //         'Authorization' => 'Bearer ' . $token,
     //     ]);
 
     //     // Try to access protected route with the same token
-    //     $response = $this->getJson('/api/auth/me', [
+    //     $response = $this->getJson('/api/v1/auth/me', [
     //         'Authorization' => 'Bearer ' . $token,
     //     ]);
 
@@ -112,7 +112,7 @@ class LogoutTest extends TestCase
 
         $token = JWTAuth::fromUser($user);
 
-        $response = $this->getJson('/api/auth/me', [
+        $response = $this->getJson('/api/v1/auth/me', [
             'Authorization' => 'Bearer '.$token,
         ]);
 
@@ -134,7 +134,7 @@ class LogoutTest extends TestCase
      */
     public function test_me_endpoint_requires_authentication(): void
     {
-        $response = $this->getJson('/api/auth/me');
+        $response = $this->getJson('/api/v1/auth/me');
 
         $response->assertStatus(401);
     }

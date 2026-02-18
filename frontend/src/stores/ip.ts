@@ -51,8 +51,17 @@ export const useIPStore = defineStore('ip', () => {
   })
 
   // Getters (Computed)
-  const ipv4Addresses = computed(() => ips.value.filter((ip) => ip.type === 'ipv4'))
-  const ipv6Addresses = computed(() => ips.value.filter((ip) => ip.type === 'ipv6'))
+  // Helper to ensure ips.value is always an array
+  const getIPArray = (): IPAddress[] => {
+    if (!Array.isArray(ips.value)) {
+      console.warn('IP store: ips.value is not an array, resetting to empty array')
+      return []
+    }
+    return ips.value
+  }
+
+  const ipv4Addresses = computed(() => getIPArray().filter((ip) => ip.type === 'ipv4'))
+  const ipv6Addresses = computed(() => getIPArray().filter((ip) => ip.type === 'ipv6'))
   const totalCount = computed(() => pagination.value.total)
 
   // Actions
@@ -75,17 +84,41 @@ export const useIPStore = defineStore('ip', () => {
           per_page: Math.min(Math.max(perPage, 1), 100),
         },
       })
-      ips.value = data.data ?? []
+
+      // Validate and ensure data.data is an array
+      // Handle nested Laravel pagination response: { success: true, data: { data: [...], meta: {...} } }
+      if (data.success && data.data && typeof data.data === 'object' && 'data' in data.data && Array.isArray(data.data.data)) {
+        ips.value = data.data.data
+      } else if (data.success && Array.isArray(data.data)) {
+        // Direct array response: { success: true, data: [...] }
+        ips.value = data.data
+      } else if (data.success && !data.data) {
+        // API returned success but no data
+        ips.value = []
+        console.warn('IP store: API returned success but no data')
+      } else if (!data.success && data.error) {
+        // API returned an error
+        throw new Error(data.error.message || 'API returned error')
+      } else {
+        // Unexpected response format
+        ips.value = []
+        console.warn('IP store: Unexpected API response format', data)
+      }
       
-      // Update pagination metadata if available
-      if (data.meta) {
+      // Update pagination metadata if available (handle both direct and nested formats)
+      let metaData = data.meta
+      // Handle nested Laravel pagination: data.data is an object with meta property
+      if (!metaData && data.data && typeof data.data === 'object' && !Array.isArray(data.data)) {
+        metaData = (data.data as { meta?: typeof data.meta }).meta
+      }
+      if (metaData) {
         pagination.value = {
-          current_page: data.meta.current_page ?? 1,
-          per_page: data.meta.per_page ?? 20,
-          total: data.meta.total ?? 0,
-          last_page: data.meta.last_page ?? 1,
-          from: data.meta.from ?? null,
-          to: data.meta.to ?? null,
+          current_page: metaData.current_page ?? 1,
+          per_page: metaData.per_page ?? 20,
+          total: metaData.total ?? 0,
+          last_page: metaData.last_page ?? 1,
+          from: metaData.from ?? null,
+          to: metaData.to ?? null,
         }
       }
     } catch (err: unknown) {
@@ -186,7 +219,20 @@ export const useIPStore = defineStore('ip', () => {
 
     try {
       const { data } = await api.get<APIResponse<IPHistory[]>>(`/ip/${id}/history`)
-      history.value = data.data ?? []
+
+      // Validate and ensure data.data is an array
+      if (data.success && Array.isArray(data.data)) {
+        history.value = data.data
+      } else if (data.success && !data.data) {
+        // API returned success but no data
+        history.value = []
+      } else if (!data.success && data.error) {
+        throw new Error(data.error.message || 'API returned error')
+      } else {
+        // Unexpected response format
+        history.value = []
+        console.warn('IP store: Unexpected history API response format', data)
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to fetch history'
       error.value = message

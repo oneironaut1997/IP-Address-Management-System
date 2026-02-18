@@ -12,7 +12,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->alias([
+            'stateless.jwt' => \App\Http\Middleware\StatelessJwtAuth::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

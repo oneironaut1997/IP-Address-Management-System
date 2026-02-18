@@ -51,7 +51,7 @@ class LoginTest extends TestCase
             $callback($mockPipe);
         });
 
-        $response = $this->postJson('/api/auth/login', [
+        $response = $this->postJson('/api/v1/auth/login', [
             'email' => 'test@example.com',
             'password' => 'Password123!',
         ]);
@@ -87,7 +87,7 @@ class LoginTest extends TestCase
             'role' => 'regular',
         ]);
 
-        $response = $this->postJson('/api/auth/login', [
+        $response = $this->postJson('/api/v1/auth/login', [
             'email' => 'test@example.com',
             'password' => 'WrongPassword123!',
         ]);
@@ -106,7 +106,7 @@ class LoginTest extends TestCase
      */
     public function test_login_fails_with_nonexistent_email(): void
     {
-        $response = $this->postJson('/api/auth/login', [
+        $response = $this->postJson('/api/v1/auth/login', [
             'email' => 'nonexistent@example.com',
             'password' => 'Password123!',
         ]);
@@ -125,7 +125,7 @@ class LoginTest extends TestCase
      */
     public function test_login_requires_email(): void
     {
-        $response = $this->postJson('/api/auth/login', [
+        $response = $this->postJson('/api/v1/auth/login', [
             'password' => 'Password123!',
         ]);
 
@@ -138,7 +138,7 @@ class LoginTest extends TestCase
      */
     public function test_login_requires_password(): void
     {
-        $response = $this->postJson('/api/auth/login', [
+        $response = $this->postJson('/api/v1/auth/login', [
             'email' => 'test@example.com',
         ]);
 
@@ -178,7 +178,7 @@ class LoginTest extends TestCase
             $callback($mockPipe);
         });
 
-        $this->postJson('/api/auth/login', [
+        $this->postJson('/api/v1/auth/login', [
             'email' => 'test@example.com',
             'password' => 'Password123!',
         ]);
@@ -220,7 +220,7 @@ class LoginTest extends TestCase
             $callback($mockPipe);
         });
 
-        $response = $this->postJson('/api/auth/login', [
+        $response = $this->postJson('/api/v1/auth/login', [
             'email' => 'admin@example.com',
             'password' => 'AdminPass123!',
         ]);

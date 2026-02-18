@@ -53,7 +53,7 @@ class TokenRefreshTest extends TestCase
         });
 
         // Login to get tokens
-        $loginResponse = $this->postJson('/api/auth/login', [
+        $loginResponse = $this->postJson('/api/v1/auth/login', [
             'email' => 'test@example.com',
             'password' => 'Password123!',
         ]);
@@ -66,7 +66,7 @@ class TokenRefreshTest extends TestCase
         Redis::shouldReceive('srem')->andReturn(1);
 
         // Refresh the token
-        $response = $this->postJson('/api/auth/refresh', [], [
+        $response = $this->postJson('/api/v1/auth/refresh', [], [
             'Authorization' => 'Bearer '.$refreshToken,
         ]);
 
@@ -96,7 +96,7 @@ class TokenRefreshTest extends TestCase
      */
     public function test_refresh_fails_with_invalid_token(): void
     {
-        $response = $this->postJson('/api/auth/refresh', [], [
+        $response = $this->postJson('/api/v1/auth/refresh', [], [
             'Authorization' => 'Bearer invalid_token',
         ]);
 
@@ -114,7 +114,7 @@ class TokenRefreshTest extends TestCase
      */
     public function test_refresh_requires_authorization_header(): void
     {
-        $response = $this->postJson('/api/auth/refresh');
+        $response = $this->postJson('/api/v1/auth/refresh');
 
         $response->assertStatus(401)
             ->assertJson([
@@ -138,7 +138,7 @@ class TokenRefreshTest extends TestCase
 
         $accessToken = JWTAuth::fromUser($user);
 
-        $response = $this->postJson('/api/auth/refresh', [], [
+        $response = $this->postJson('/api/v1/auth/refresh', [], [
             'Authorization' => 'Bearer '.$accessToken,
         ]);
 
@@ -184,7 +184,7 @@ class TokenRefreshTest extends TestCase
         });
 
         // Login to get tokens
-        $loginResponse = $this->postJson('/api/auth/login', [
+        $loginResponse = $this->postJson('/api/v1/auth/login', [
             'email' => 'test@example.com',
             'password' => 'Password123!',
         ]);
@@ -197,7 +197,7 @@ class TokenRefreshTest extends TestCase
         Redis::shouldReceive('srem')->andReturn(1);
 
         // Refresh the token
-        $this->postJson('/api/auth/refresh', [], [
+        $this->postJson('/api/v1/auth/refresh', [], [
             'Authorization' => 'Bearer '.$oldRefreshToken,
         ]);
 
@@ -205,7 +205,7 @@ class TokenRefreshTest extends TestCase
         Redis::shouldReceive('get')->once()->andReturn(null);
 
         // Try to use old refresh token again
-        $response = $this->postJson('/api/auth/refresh', [], [
+        $response = $this->postJson('/api/v1/auth/refresh', [], [
             'Authorization' => 'Bearer '.$oldRefreshToken,
         ]);
 

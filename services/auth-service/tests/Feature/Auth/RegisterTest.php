@@ -21,7 +21,7 @@ class RegisterTest extends TestCase
      */
     public function test_user_can_register_with_valid_credentials(): void
     {
-        $response = $this->postJson('/api/auth/register', [
+        $response = $this->postJson('/api/v1/auth/register', [
             'email' => 'test@example.com',
             'password' => 'Password123!',
             'password_confirmation' => 'Password123!',
@@ -59,7 +59,7 @@ class RegisterTest extends TestCase
             'role' => 'regular',
         ]);
 
-        $response = $this->postJson('/api/auth/register', [
+        $response = $this->postJson('/api/v1/auth/register', [
             'email' => 'test@example.com',
             'password' => 'Password123!',
             'password_confirmation' => 'Password123!',
@@ -74,7 +74,7 @@ class RegisterTest extends TestCase
      */
     public function test_registration_fails_with_invalid_email(): void
     {
-        $response = $this->postJson('/api/auth/register', [
+        $response = $this->postJson('/api/v1/auth/register', [
             'email' => 'not-an-email',
             'password' => 'Password123!',
             'password_confirmation' => 'Password123!',
@@ -89,7 +89,7 @@ class RegisterTest extends TestCase
      */
     public function test_registration_fails_with_weak_password(): void
     {
-        $response = $this->postJson('/api/auth/register', [
+        $response = $this->postJson('/api/v1/auth/register', [
             'email' => 'test@example.com',
             'password' => 'weak',
             'password_confirmation' => 'weak',
@@ -104,7 +104,7 @@ class RegisterTest extends TestCase
      */
     public function test_registration_fails_with_password_mismatch(): void
     {
-        $response = $this->postJson('/api/auth/register', [
+        $response = $this->postJson('/api/v1/auth/register', [
             'email' => 'test@example.com',
             'password' => 'Password123!',
             'password_confirmation' => 'DifferentPassword123!',
@@ -119,7 +119,7 @@ class RegisterTest extends TestCase
      */
     public function test_registration_assigns_regular_role_by_default(): void
     {
-        $this->postJson('/api/auth/register', [
+        $this->postJson('/api/v1/auth/register', [
             'email' => 'test@example.com',
             'password' => 'Password123!',
             'password_confirmation' => 'Password123!',

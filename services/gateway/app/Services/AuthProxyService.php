@@ -130,7 +130,7 @@ class AuthProxyService extends ProxyService
 
         // Fetch IP activities from ip-management service
         if ($type === 'ip' || $type === 'all') {
-            $ipResponse = $this->forwardToIPService('get', '/api/v1/activity/logs', $request);
+            $ipResponse = $this->forwardToIPService('get', $this->buildActivityLogEndpoint(), $request);
 
             if ($ipResponse->successful()) {
                 $ipData = $ipResponse->json();
@@ -186,7 +186,7 @@ class AuthProxyService extends ProxyService
      */
     protected function buildAuthEndpoint(string $endpoint): string
     {
-        return '/api/auth/'.$endpoint;
+        return '/api/v1/auth/'.$endpoint;
     }
 
     /**
@@ -194,6 +194,6 @@ class AuthProxyService extends ProxyService
      */
     protected function buildActivityLogEndpoint(): string
     {
-        return '/api/activity/logs';
+        return '/api/v1/activity/logs';
     }
 }

@@ -40,8 +40,17 @@ export const useActivityStore = defineStore('activity', () => {
   } | null>(null)
 
   // Getters (Computed)
+  // Helper to ensure logs.value is always an array
+  const getLogsArray = (): AuditLog[] => {
+    if (!Array.isArray(logs.value)) {
+      console.warn('Activity store: logs.value is not an array, resetting to empty array')
+      return []
+    }
+    return logs.value
+  }
+
   const filteredLogs = computed(() => {
-    let result = logs.value
+    let result = getLogsArray()
 
     // Filter by type
     if (typeFilter.value !== 'all') {
@@ -60,16 +69,16 @@ export const useActivityStore = defineStore('activity', () => {
 
   const eventTypes = computed(() => {
     const types = new Set<string>()
-    logs.value.forEach((log) => types.add(log.event_type))
+    getLogsArray().forEach((log) => types.add(log.event_type))
     return Array.from(types).sort()
   })
 
   const authLogs = computed(() =>
-    logs.value.filter((log) => (log.type || 'auth') === 'auth')
+    getLogsArray().filter((log) => (log.type || 'auth') === 'auth')
   )
 
   const ipLogs = computed(() =>
-    logs.value.filter((log) => log.type === 'ip')
+    getLogsArray().filter((log) => log.type === 'ip')
   )
 
   // Actions
@@ -88,10 +97,33 @@ export const useActivityStore = defineStore('activity', () => {
       const { data } = await api.get<APIResponse<AuditLog[]>>('/audit/logs', {
         params: { type },
       })
-      logs.value = data.data ?? []
-      // Store metadata from response
+
+      // Validate and ensure data.data is an array
+      // Handle nested Laravel pagination response: { success: true, data: { data: [...], meta: {...} } }
+      if (data.success && data.data && typeof data.data === 'object' && 'data' in data.data && Array.isArray(data.data.data)) {
+        logs.value = data.data.data
+      } else if (data.success && Array.isArray(data.data)) {
+        // Direct array response: { success: true, data: [...] }
+        logs.value = data.data
+      } else if (data.success && !data.data) {
+        // API returned success but no data
+        logs.value = []
+        console.warn('Activity store: API returned success but no data')
+      } else if (!data.success && data.error) {
+        throw new Error(data.error.message || 'API returned error')
+      } else {
+        // Unexpected response format
+        logs.value = []
+        console.warn('Activity store: Unexpected API response format', data)
+      }
+      // Store metadata from response (handle both direct and nested formats)
       if (data.meta) {
         meta.value = data.meta as unknown as typeof meta.value
+      } else if (data.data && typeof data.data === 'object' && !Array.isArray(data.data)) {
+        const nestedData = data.data as Record<string, unknown>
+        if ('meta' in nestedData) {
+          meta.value = nestedData.meta as unknown as typeof meta.value
+        }
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to fetch activity logs'

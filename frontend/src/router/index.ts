@@ -121,8 +121,8 @@ const router = createRouter({
  * - Redirects to login if accessing protected route without authentication
  * - Redirects to dashboard if accessing guest route while authenticated
  */
-router.beforeEach((to, from, next) => {
-  const authenticated = isAuthenticated()
+router.beforeEach(async(to, from, next) => {
+  const authenticated = await isAuthenticated()
   const meta = to.meta as RouteMeta
 
   // Check if route requires authentication

@@ -158,28 +158,28 @@ After seeding, the following super admin account is available:
 
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
-| POST | `/api/auth/register` | Register new user | No |
-| POST | `/api/auth/login` | Login and get tokens | No |
-| POST | `/api/auth/logout` | Logout and invalidate tokens | Yes |
-| POST | `/api/auth/refresh` | Refresh access token | Yes (refresh token) |
-| GET | `/api/auth/me` | Get current user info | Yes |
+| POST | `/api/v1/auth/register` | Register new user | No |
+| POST | `/api/v1/auth/login` | Login and get tokens | No |
+| POST | `/api/v1/auth/logout` | Logout and invalidate tokens | Yes |
+| POST | `/api/v1/v1/auth/refresh` | Refresh access token | Yes (refresh token) |
+| GET | `/api/v1/auth/me` | Get current user info | Yes |
 
 ### IP Management Endpoints
 
 | Method | Endpoint | Description | Auth Required | Role |
 |--------|----------|-------------|---------------|------|
-| GET | `/api/ip` | List all IP addresses | Yes | Any |
-| POST | `/api/ip` | Create new IP address | Yes | Any |
-| GET | `/api/ip/{id}` | Get IP address details | Yes | Any |
-| PUT | `/api/ip/{id}` | Update IP address | Yes | Owner/Admin |
-| DELETE | `/api/ip/{id}` | Delete IP address | Yes | Super Admin |
-| GET | `/api/ip/{id}/history` | Get IP change history | Yes | Any |
+| GET | `/api/v1/ip` | List all IP addresses | Yes | Any |
+| POST | `/api/v1/ip` | Create new IP address | Yes | Any |
+| GET | `/api/v1/ip/{id}` | Get IP address details | Yes | Any |
+| PUT | `/api/v1/ip/{id}` | Update IP address | Yes | Owner/Admin |
+| DELETE | `/api/v1/ip/{id}` | Delete IP address | Yes | Super Admin |
+| GET | `/api/v1/ip/{id}/history` | Get IP change history | Yes | Any |
 
 ### Audit Endpoints
 
 | Method | Endpoint | Description | Auth Required | Role |
 |--------|----------|-------------|---------------|------|
-| GET | `/api/audit/logs` | Get unified audit logs (auth + IP activities) | Yes | Super Admin |
+| GET | `/api/v1/audit/logs` | Get unified audit logs (auth + IP activities) | Yes | Super Admin |
 
 #### Query Parameters
 
@@ -234,7 +234,7 @@ After seeding, the following super admin account is available:
 
 #### Login
 ```bash
-curl -X POST http://localhost:8000/api/auth/login \
+curl -X POST http://localhost:8000/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email": "admin@example.com", "password": "password"}'
 ```
@@ -251,7 +251,7 @@ Response:
 
 #### Create IP Address
 ```bash
-curl -X POST http://localhost:8000/api/ip \
+curl -X POST http://localhost:8000/api/v1/ip \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer {access_token}" \
   -d '{
@@ -376,7 +376,7 @@ ip-management-system/
 │   └── redis/                  # Redis configuration
 ├── frontend/                   # Vue 3 Frontend
 │   ├── src/
-│   │   ├── api/               # API client
+│   │   ├── api/v1/               # API client
 │   │   ├── components/        # Vue components
 │   │   ├── stores/            # Pinia stores
 │   │   ├── types/             # TypeScript types

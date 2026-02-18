@@ -33,7 +33,7 @@ Route::prefix('v1')->group(function () {
     |
     */
 
-    Route::middleware(['api', 'auth:api'])->group(function () {
+    Route::middleware(['api', 'stateless.jwt'])->group(function () {
         // IP Management Routes
         Route::apiResource('ip', IPController::class);
         Route::get('ip/{ip}/history', [IPController::class, 'history']);

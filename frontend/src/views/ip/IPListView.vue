@@ -11,14 +11,12 @@
 import { ref, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useIPStore } from '@/stores/ip'
+import IPTable from '@/components/tables/IPTable.vue'
 import AddIPForm from '@/components/forms/AddIPForm.vue'
 import EditIPForm from '@/components/forms/EditIPForm.vue'
 import type { IPAddress } from '@/types'
 import {
   Plus,
-  Eye,
-  History,
-  Pencil,
   Trash2,
   Loader2,
   Globe,
@@ -26,7 +24,6 @@ import {
   AlertTriangle,
   X,
 } from 'lucide-vue-next'
-import { cn } from '@/lib/utils'
 
 const authStore = useAuthStore()
 const ipStore = useIPStore()
@@ -36,22 +33,6 @@ const showEditModal = ref(false)
 const showDeleteModal = ref(false)
 const selectedIP = ref<IPAddress | null>(null)
 const ipToDelete = ref<IPAddress | null>(null)
-
-function isCurrentUser(userId: string): boolean {
-  return authStore.user?.id === userId
-}
-
-function canEdit(ip: IPAddress): boolean {
-  return isCurrentUser(ip.user_id) || authStore.isSuperAdmin
-}
-
-function formatDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  })
-}
 
 function openEditModal(ip: IPAddress): void {
   selectedIP.value = ip
@@ -169,92 +150,15 @@ onMounted(() => {
     </div>
 
     <!-- IP Table -->
-    <div v-else class="rounded-xl border bg-card overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="border-b bg-muted/50">
-              <th class="px-4 py-3 text-left font-medium text-muted-foreground">IP Address</th>
-              <th class="px-4 py-3 text-left font-medium text-muted-foreground">Label</th>
-              <th class="px-4 py-3 text-left font-medium text-muted-foreground">Type</th>
-              <th class="px-4 py-3 text-left font-medium text-muted-foreground">Owner</th>
-              <th class="px-4 py-3 text-left font-medium text-muted-foreground">Created</th>
-              <th class="px-4 py-3 text-right font-medium text-muted-foreground">Actions</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y">
-            <tr
-              v-for="ip in ipStore.ips"
-              :key="ip.id"
-              class="hover:bg-muted/50 transition-colors"
-            >
-              <td class="px-4 py-3">
-                <router-link
-                  :to="`/ip/${ip.id}`"
-                  class="font-mono font-medium text-primary hover:underline"
-                >
-                  {{ ip.ip_address }}
-                </router-link>
-              </td>
-              <td class="px-4 py-3">{{ ip.label }}</td>
-              <td class="px-4 py-3">
-                <span
-                  class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
-                  :class="ip.type === 'ipv4' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'"
-                >
-                  {{ ip.type.toUpperCase() }}
-                </span>
-              </td>
-              <td class="px-4 py-3">
-                <span
-                  :class="cn(
-                    'text-sm',
-                    isCurrentUser(ip.user_id) ? 'text-primary font-medium' : 'text-muted-foreground'
-                  )"
-                >
-                  {{ isCurrentUser(ip.user_id) ? 'You' : 'User' }}
-                </span>
-              </td>
-              <td class="px-4 py-3 text-muted-foreground">{{ formatDate(ip.created_at) }}</td>
-              <td class="px-4 py-3">
-                <div class="flex items-center justify-end gap-1">
-                  <router-link
-                    :to="`/ip/${ip.id}`"
-                    class="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-muted transition-colors"
-                    title="View Details"
-                  >
-                    <Eye class="w-4 h-4 text-muted-foreground" />
-                  </router-link>
-                  <router-link
-                    :to="`/ip/${ip.id}/history`"
-                    class="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-muted transition-colors"
-                    title="View History"
-                  >
-                    <History class="w-4 h-4 text-muted-foreground" />
-                  </router-link>
-                  <button
-                    v-if="canEdit(ip)"
-                    class="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-muted transition-colors"
-                    title="Edit"
-                    @click="openEditModal(ip)"
-                  >
-                    <Pencil class="w-4 h-4 text-muted-foreground" />
-                  </button>
-                  <button
-                    v-if="authStore.isSuperAdmin"
-                    class="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-destructive/10 transition-colors"
-                    title="Delete"
-                    @click="confirmDelete(ip)"
-                  >
-                    <Trash2 class="w-4 h-4 text-destructive" />
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <IPTable
+      v-else
+      :items="ipStore.ips"
+      :loading="ipStore.loading"
+      :current-user-id="authStore.user?.id"
+      :is-super-admin="authStore.isSuperAdmin"
+      @edit="openEditModal"
+      @delete="confirmDelete"
+    />
 
     <!-- Add IP Modal -->
     <AddIPForm

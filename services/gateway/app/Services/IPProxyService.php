@@ -115,7 +115,7 @@ class IPProxyService extends ProxyService
      */
     protected function buildEndpoint(?string $path = null): string
     {
-        $basePath = '/api/ip';
+        $basePath = '/api/v1/ip';
 
         if ($path) {
             // Ensure path doesn't start with a slash to avoid double slashes

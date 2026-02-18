@@ -46,7 +46,7 @@ class ProxyService
      * Forward a request to the auth service.
      *
      * @param  string  $method  HTTP method (get, post, put, patch, delete)
-     * @param  string  $endpoint  API endpoint (e.g., '/api/auth/login')
+     * @param  string  $endpoint  API endpoint (e.g., '/api/v1/auth/login')
      * @param  Request  $request  The original request
      * @param  array  $additionalHeaders  Additional headers to forward
      */
@@ -93,7 +93,7 @@ class ProxyService
      * Forward a request to the IP management service.
      *
      * @param  string  $method  HTTP method (get, post, put, patch, delete)
-     * @param  string  $endpoint  API endpoint (e.g., '/api/ip')
+     * @param  string  $endpoint  API endpoint (e.g., '/api/v1/ip')
      * @param  Request  $request  The original request
      * @param  array  $additionalHeaders  Additional headers to forward
      */

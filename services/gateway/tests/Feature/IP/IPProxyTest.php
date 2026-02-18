@@ -15,13 +15,13 @@ use Tests\TestCase;
 class IPProxyTest extends TestCase
 {
     /**
-     * Test that GET /api/ip returns IP list.
+     * Test that GET /api/v1/ip returns IP list.
      */
     public function test_get_ip_list_returns_data(): void
     {
         // Mock ip-management service response - use wildcard pattern
         Http::fake([
-            'http://ip-management:8000/api/ip*' => Http::response([
+            'http://ip-management:8000/api/v1/ip*' => Http::response([
                 'success' => true,
                 'data' => [
                     'ips' => [
@@ -40,20 +40,20 @@ class IPProxyTest extends TestCase
             ], 200),
         ]);
 
-        $response = $this->getJson('/api/ip');
+        $response = $this->getJson('/api/v1/ip');
 
         $response->assertStatus(200)
             ->assertJsonPath('success', true);
     }
 
     /**
-     * Test that GET /api/ip accepts query parameters.
+     * Test that GET /api/v1/ip accepts query parameters.
      */
     public function test_get_ip_list_accepts_query_parameters(): void
     {
         // Mock ip-management service response - use wildcard pattern
         Http::fake([
-            'http://ip-management:8000/api/ip*' => Http::response([
+            'http://ip-management:8000/api/v1/ip*' => Http::response([
                 'success' => true,
                 'data' => [
                     'ips' => [],
@@ -66,7 +66,7 @@ class IPProxyTest extends TestCase
             ], 200),
         ]);
 
-        $response = $this->getJson('/api/ip', [
+        $response = $this->getJson('/api/v1/ip', [
             'search' => '192.168',
             'status' => 'active',
             'page' => 1,
@@ -78,13 +78,13 @@ class IPProxyTest extends TestCase
     }
 
     /**
-     * Test that POST /api/ip creates a new IP address.
+     * Test that POST /api/v1/ip creates a new IP address.
      */
     public function test_create_ip_creates_new_ip(): void
     {
         // Mock ip-management service response - use wildcard pattern
         Http::fake([
-            'http://ip-management:8000/api/ip*' => Http::response([
+            'http://ip-management:8000/api/v1/ip*' => Http::response([
                 'success' => true,
                 'data' => [
                     'id' => 'new-ip-uuid',
@@ -95,7 +95,7 @@ class IPProxyTest extends TestCase
             ], 201),
         ]);
 
-        $response = $this->postJson('/api/ip', [
+        $response = $this->postJson('/api/v1/ip', [
             'ip_address' => '192.168.1.1',
             'label' => 'Test IP',
             'comment' => 'Test description',
@@ -113,7 +113,7 @@ class IPProxyTest extends TestCase
     {
         // Mock ip-management service validation error - use wildcard pattern
         Http::fake([
-            'http://ip-management:8000/api/ip*' => Http::response([
+            'http://ip-management:8000/api/v1/ip*' => Http::response([
                 'success' => false,
                 'error' => [
                     'code' => 'VALIDATION_ERROR',
@@ -122,19 +122,19 @@ class IPProxyTest extends TestCase
             ], 422),
         ]);
 
-        $response = $this->postJson('/api/ip', []);
+        $response = $this->postJson('/api/v1/ip', []);
 
         $this->assertTrue(in_array($response->getStatusCode(), [400, 422, 500]));
     }
 
     /**
-     * Test that GET /api/ip/{id} retrieves a specific IP.
+     * Test that GET /api/v1/ip/{id} retrieves a specific IP.
      */
     public function test_get_single_ip_returns_data(): void
     {
         // Mock ip-management service response - use wildcard pattern
         Http::fake([
-            'http://ip-management:8000/api/ip/*' => Http::response([
+            'http://ip-management:8000/api/v1/ip/*' => Http::response([
                 'success' => true,
                 'data' => [
                     'id' => 'ip-uuid',
@@ -144,7 +144,7 @@ class IPProxyTest extends TestCase
             ], 200),
         ]);
 
-        $response = $this->getJson('/api/ip/ip-uuid');
+        $response = $this->getJson('/api/v1/ip/ip-uuid');
 
         $response->assertStatus(200)
             ->assertJsonPath('success', true)
@@ -152,13 +152,13 @@ class IPProxyTest extends TestCase
     }
 
     /**
-     * Test that GET /api/ip/{id} returns 404 for non-existent IP.
+     * Test that GET /api/v1/ip/{id} returns 404 for non-existent IP.
      */
     public function test_get_single_ip_returns_404_for_missing(): void
     {
         // Mock ip-management service 404 response - use wildcard pattern
         Http::fake([
-            'http://ip-management:8000/api/ip/*' => Http::response([
+            'http://ip-management:8000/api/v1/ip/*' => Http::response([
                 'success' => false,
                 'error' => [
                     'code' => 'NOT_FOUND',
@@ -167,20 +167,20 @@ class IPProxyTest extends TestCase
             ], 404),
         ]);
 
-        $response = $this->getJson('/api/ip/non-existent');
+        $response = $this->getJson('/api/v1/ip/non-existent');
 
         $response->assertStatus(404)
             ->assertJsonPath('success', false);
     }
 
     /**
-     * Test that PUT /api/ip/{id} updates an IP address.
+     * Test that PUT /api/v1/ip/{id} updates an IP address.
      */
     public function test_update_ip_updates_data(): void
     {
         // Mock ip-management service response - use wildcard pattern
         Http::fake([
-            'http://ip-management:8000/api/ip/*' => Http::response([
+            'http://ip-management:8000/api/v1/ip/*' => Http::response([
                 'success' => true,
                 'data' => [
                     'id' => 'ip-uuid',
@@ -191,7 +191,7 @@ class IPProxyTest extends TestCase
             ], 200),
         ]);
 
-        $response = $this->putJson('/api/ip/ip-uuid', [
+        $response = $this->putJson('/api/v1/ip/ip-uuid', [
             'name' => 'Updated IP Name',
             'description' => 'Updated description',
         ]);
@@ -202,13 +202,13 @@ class IPProxyTest extends TestCase
     }
 
     /**
-     * Test that PATCH /api/ip/{id} partially updates an IP address.
+     * Test that PATCH /api/v1/ip/{id} partially updates an IP address.
      */
     public function test_patch_ip_partially_updates_data(): void
     {
         // Mock ip-management service response - use wildcard pattern
         Http::fake([
-            'http://ip-management:8000/api/ip/*' => Http::response([
+            'http://ip-management:8000/api/v1/ip/*' => Http::response([
                 'success' => true,
                 'data' => [
                     'id' => 'ip-uuid',
@@ -218,7 +218,7 @@ class IPProxyTest extends TestCase
             ], 200),
         ]);
 
-        $response = $this->patchJson('/api/ip/ip-uuid', [
+        $response = $this->patchJson('/api/v1/ip/ip-uuid', [
             'name' => 'Partially Updated IP',
         ]);
 
@@ -227,13 +227,13 @@ class IPProxyTest extends TestCase
     }
 
     /**
-     * Test that DELETE /api/ip/{id} removes an IP address.
+     * Test that DELETE /api/v1/ip/{id} removes an IP address.
      */
     public function test_delete_ip_removes_data(): void
     {
         // Mock ip-management service response - use wildcard pattern
         Http::fake([
-            'http://ip-management:8000/api/ip/*' => Http::response([
+            'http://ip-management:8000/api/v1/ip/*' => Http::response([
                 'success' => true,
                 'data' => [
                     'message' => 'IP address deleted successfully',
@@ -241,7 +241,7 @@ class IPProxyTest extends TestCase
             ], 200),
         ]);
 
-        $response = $this->deleteJson('/api/ip/ip-uuid');
+        $response = $this->deleteJson('/api/v1/ip/ip-uuid');
 
         $response->assertStatus(200)
             ->assertJsonPath('success', true);
@@ -254,7 +254,7 @@ class IPProxyTest extends TestCase
     {
         // Mock ip-management service response for history - use wildcard pattern
         Http::fake([
-            'http://ip-management:8000/api/ip/*/history*' => Http::response([
+            'http://ip-management:8000/api/v1/ip/*/history*' => Http::response([
                 'success' => true,
                 'data' => [
                     'history' => [],
@@ -262,7 +262,7 @@ class IPProxyTest extends TestCase
             ], 200),
         ]);
 
-        $response = $this->getJson('/api/ip/ip-uuid/history');
+        $response = $this->getJson('/api/v1/ip/ip-uuid/history');
 
         $response->assertStatus(200)
             ->assertJsonPath('success', true);
@@ -275,7 +275,7 @@ class IPProxyTest extends TestCase
     {
         // Mock ip-management service response for audit - use wildcard pattern
         Http::fake([
-            'http://ip-management:8000/api/ip/*/audit*' => Http::response([
+            'http://ip-management:8000/api/v1/ip/*/audit*' => Http::response([
                 'success' => true,
                 'data' => [
                     'audit' => [],
@@ -283,7 +283,7 @@ class IPProxyTest extends TestCase
             ], 200),
         ]);
 
-        $response = $this->getJson('/api/ip/ip-uuid/audit');
+        $response = $this->getJson('/api/v1/ip/ip-uuid/audit');
 
         $response->assertStatus(200)
             ->assertJsonPath('success', true);
@@ -296,7 +296,7 @@ class IPProxyTest extends TestCase
     {
         // Mock ip-management service response for nested path - use wildcard pattern
         Http::fake([
-            'http://ip-management:8000/api/ip/*' => Http::response([
+            'http://ip-management:8000/api/v1/ip/*' => Http::response([
                 'success' => true,
                 'data' => [],
             ], 200),
@@ -304,7 +304,7 @@ class IPProxyTest extends TestCase
 
         // This path doesn't exist in the routes, so it should return 404
         // The gateway's route definition doesn't include this wildcard path
-        $response = $this->getJson('/api/ip/ip-uuid/history/filter');
+        $response = $this->getJson('/api/v1/ip/ip-uuid/history/filter');
 
         // The route doesn't exist, so it should return 404
         $response->assertStatus(404);
@@ -326,7 +326,7 @@ class IPProxyTest extends TestCase
             ], 503),
         ]);
 
-        $response = $this->getJson('/api/ip');
+        $response = $this->getJson('/api/v1/ip');
 
         $response->assertStatus(503)
             ->assertJsonPath('success', false);

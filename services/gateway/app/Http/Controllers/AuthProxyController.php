@@ -23,21 +23,6 @@ use Illuminate\Http\Response;
 class AuthProxyController extends Controller
 {
     /**
-     * Cookie configuration constants
-     */
-    private const ACCESS_TOKEN_COOKIE = 'access_token';
-
-    private const REFRESH_TOKEN_COOKIE = 'refresh_token';
-
-    private const COOKIE_PATH = '/';
-
-    private const COOKIE_DOMAIN = null;
-
-    private const ACCESS_TOKEN_TTL = 60; // minutes
-
-    private const REFRESH_TOKEN_TTL = 10080; // minutes (7 days)
-
-    /**
      * @param  AuthProxyService  $authProxyService  The authentication proxy service
      */
     public function __construct(
@@ -47,33 +32,20 @@ class AuthProxyController extends Controller
     /**
      * Handle user login
      *
-     * Proxies login request to auth-service and returns tokens via cookies.
+     * Proxies login request to auth-service.
+     * Tokens are returned in the JSON response.
      *
      * @param  Request  $request  The HTTP request
-     * @return JsonResponse The authentication response with cookies
+     * @return JsonResponse The authentication response
      */
     public function login(Request $request): JsonResponse
     {
         $response = $this->authProxyService->login($request);
-        $responseData = $response->json();
 
-        if ($response->successful() && isset($responseData['data']['tokens'])) {
-            $tokens = $responseData['data']['tokens'];
-            $cookies = $this->createTokenCookies(
-                $tokens['access_token'],
-                $tokens['refresh_token']
-            );
-
-            $jsonResponse = response()->json($responseData, $response->status());
-
-            foreach ($cookies as $cookie) {
-                $jsonResponse->withCookie($cookie);
-            }
-
-            return $jsonResponse;
-        }
-
-        return response()->json($responseData, $response->status());
+        return response()->json(
+            $response->json(),
+            $response->status()
+        );
     }
 
     /**
@@ -97,58 +69,26 @@ class AuthProxyController extends Controller
     /**
      * Handle token refresh
      *
-     * Proxies token refresh request to auth-service and returns new cookies.
+     * Proxies token refresh request to auth-service.
+     * The Authorization header with Bearer token is forwarded automatically.
      *
-     * @param  Request  $request  The HTTP request
-     * @return JsonResponse The new token pair with cookies
+     * @param  Request  $request  The HTTP request with Authorization header
+     * @return JsonResponse The new token pair
      */
     public function refresh(Request $request): JsonResponse
     {
-        // Try to get refresh token from cookie first
-        $refreshToken = $request->cookie(self::REFRESH_TOKEN_COOKIE);
+        $proxyResponse = $this->authProxyService->refreshToken($request);
 
-        // If no cookie, try header (for backward compatibility)
-        if (! $refreshToken) {
-            $authHeader = $request->header('Authorization');
-            if ($authHeader && str_starts_with($authHeader, 'Bearer ')) {
-                $refreshToken = substr($authHeader, 7);
-            }
-        }
-
-        // Make request with cookie if available
-        if ($refreshToken) {
-            $proxyResponse = $this->authProxyService->refreshTokenWithCookie($request, $refreshToken);
-        } else {
-            $proxyResponse = $this->authProxyService->refreshToken($request);
-        }
-
-        $responseData = $proxyResponse->json();
-
-        if ($proxyResponse->successful() && isset($responseData['data'])) {
-            $tokens = $responseData['data'];
-            if (isset($tokens['access_token']) && isset($tokens['refresh_token'])) {
-                $cookies = $this->createTokenCookies(
-                    $tokens['access_token'],
-                    $tokens['refresh_token']
-                );
-
-                $jsonResponse = response()->json($responseData, $proxyResponse->status());
-
-                foreach ($cookies as $cookie) {
-                    $jsonResponse->withCookie($cookie);
-                }
-
-                return $jsonResponse;
-            }
-        }
-
-        return response()->json($responseData, $proxyResponse->status());
+        return response()->json(
+            $proxyResponse->json(),
+            $proxyResponse->status()
+        );
     }
 
     /**
      * Handle user logout
      *
-     * Proxies logout request to auth-service and clears cookies.
+     * Proxies logout request to auth-service.
      *
      * @param  Request  $request  The HTTP request with Authorization header and user context
      * @return JsonResponse The logout confirmation
@@ -157,13 +97,10 @@ class AuthProxyController extends Controller
     {
         $response = $this->authProxyService->logout($request);
 
-        $jsonResponse = response()->json(
+        return response()->json(
             $response->json(),
             $response->status()
         );
-
-        // Clear authentication cookies
-        return $this->clearTokenCookies($jsonResponse);
     }
 
     /**
@@ -228,83 +165,5 @@ class AuthProxyController extends Controller
             $response->json(),
             $response->status()
         );
-    }
-
-    /**
-     * Create httpOnly secure cookies for tokens.
-     *
-     * @param  string  $accessToken  The JWT access token
-     * @param  string  $refreshToken  The JWT refresh token
-     * @return array Array of cookie instances
-     */
-    private function createTokenCookies(string $accessToken, string $refreshToken): array
-    {
-        $isSecure = config('app.env') === 'production';
-
-        return [
-            cookie(
-                self::ACCESS_TOKEN_COOKIE,
-                $accessToken,
-                self::ACCESS_TOKEN_TTL,
-                self::COOKIE_PATH,
-                self::COOKIE_DOMAIN,
-                $isSecure,
-                true, // httpOnly - JavaScript cannot access
-                false,
-                'Lax' // SameSite policy
-            ),
-            cookie(
-                self::REFRESH_TOKEN_COOKIE,
-                $refreshToken,
-                self::REFRESH_TOKEN_TTL,
-                self::COOKIE_PATH,
-                self::COOKIE_DOMAIN,
-                $isSecure,
-                true, // httpOnly - JavaScript cannot access
-                false,
-                'Lax' // SameSite policy
-            ),
-        ];
-    }
-
-    /**
-     * Clear authentication cookies.
-     *
-     * @param  JsonResponse  $response  The response to attach cookies to
-     */
-    private function clearTokenCookies(JsonResponse $response): JsonResponse
-    {
-        $isSecure = config('app.env') === 'production';
-
-        $cookies = [
-            cookie(
-                self::ACCESS_TOKEN_COOKIE,
-                '',
-                -1, // Expire immediately
-                self::COOKIE_PATH,
-                self::COOKIE_DOMAIN,
-                $isSecure,
-                true,
-                false,
-                'Lax'
-            ),
-            cookie(
-                self::REFRESH_TOKEN_COOKIE,
-                '',
-                -1, // Expire immediately
-                self::COOKIE_PATH,
-                self::COOKIE_DOMAIN,
-                $isSecure,
-                true,
-                false,
-                'Lax'
-            ),
-        ];
-
-        foreach ($cookies as $cookie) {
-            $response->withCookie($cookie);
-        }
-
-        return $response;
     }
 }

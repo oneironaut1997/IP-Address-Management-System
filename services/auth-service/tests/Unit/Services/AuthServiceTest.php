@@ -59,7 +59,7 @@ class AuthServiceTest extends TestCase
             'password' => Hash::make('correct-password'),
         ]);
 
-        $request = Request::create('/api/auth/login', 'POST');
+        $request = Request::create('/api/v1/auth/login', 'POST');
         $credentials = [
             'email' => 'test@example.com',
             'password' => 'wrong-password',
@@ -86,7 +86,7 @@ class AuthServiceTest extends TestCase
             'password' => Hash::make('Password123!'),
         ]);
 
-        $request = Request::create('/api/auth/login', 'POST');
+        $request = Request::create('/api/v1/auth/login', 'POST');
         $request->headers->set('X-Forwarded-For', '192.168.1.1');
         $request->headers->set('User-Agent', 'TestAgent/1.0');
 
@@ -235,7 +235,7 @@ class AuthServiceTest extends TestCase
      */
     public function test_extract_bearer_token_from_valid_header(): void
     {
-        $request = Request::create('/api/auth/refresh', 'POST');
+        $request = Request::create('/api/v1/auth/refresh', 'POST');
         $request->headers->set('Authorization', 'Bearer test-token-string');
 
         $token = $this->authService->extractBearerToken($request);
@@ -248,7 +248,7 @@ class AuthServiceTest extends TestCase
      */
     public function test_extract_bearer_token_returns_null_for_missing_header(): void
     {
-        $request = Request::create('/api/auth/refresh', 'POST');
+        $request = Request::create('/api/v1/auth/refresh', 'POST');
 
         $token = $this->authService->extractBearerToken($request);
 
@@ -260,7 +260,7 @@ class AuthServiceTest extends TestCase
      */
     public function test_extract_bearer_token_returns_null_for_invalid_format(): void
     {
-        $request = Request::create('/api/auth/refresh', 'POST');
+        $request = Request::create('/api/v1/auth/refresh', 'POST');
         $request->headers->set('Authorization', 'Basic test-token-string');
 
         $token = $this->authService->extractBearerToken($request);

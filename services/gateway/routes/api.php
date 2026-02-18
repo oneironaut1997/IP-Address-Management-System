@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| Public Routes (No JWT Required)
+| Public Routes
 |--------------------------------------------------------------------------
 |
 | These routes are accessible without authentication. They handle
@@ -29,43 +29,43 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::prefix('auth')->middleware('throttle:5,1')->group(function () {
-    Route::post('login', [AuthProxyController::class, 'login']);
-    Route::post('register', [AuthProxyController::class, 'register']);
-});
-
-// Refresh token has its own limit
-Route::post('auth/refresh', [AuthProxyController::class, 'refresh'])
-    ->middleware('throttle:10,1');
-
 /*
 |--------------------------------------------------------------------------
-| Protected Routes (JWT Required)
+| API v1 Routes
 |--------------------------------------------------------------------------
-|
-| These routes require a valid JWT token. The 'jwt' middleware validates
-| the token and forwards user context (X-User-ID, X-User-Role) to
-| backend services.
-|
 */
 
-Route::middleware(['throttle:60,1'])->group(function () {
-    // Authentication routes that require valid token
-    Route::post('auth/logout', [AuthProxyController::class, 'logout']);
-    Route::get('auth/me', [AuthProxyController::class, 'me']);
+Route::prefix('v1')->group(function () {
 
-    // Audit log routes
-    Route::get('audit/logs', [AuthProxyController::class, 'auditLogs']);
+    // Route::prefix('auth')->middleware('throttle:5,1')->group(function () {
+    Route::prefix('auth')->group(function () {
+        Route::post('login', [AuthProxyController::class, 'login']);
+        Route::post('register', [AuthProxyController::class, 'register']);
+    });
 
-    // IP Management Service Routes - RESTful endpoints
-    Route::get('ip', [IPProxyController::class, 'index']);
-    Route::post('ip', [IPProxyController::class, 'store']);
-    Route::get('ip/{id}', [IPProxyController::class, 'show']);
-    Route::put('ip/{id}', [IPProxyController::class, 'update']);
-    Route::patch('ip/{id}', [IPProxyController::class, 'update']);
-    Route::delete('ip/{id}', [IPProxyController::class, 'destroy']);
-    Route::get('ip/{id}/history', [IPProxyController::class, 'history']);
-    Route::get('ip/{id}/audit', [IPProxyController::class, 'audit']);
+    // Refresh token has its own limit
+    Route::post('auth/refresh', [AuthProxyController::class, 'refresh'])
+        ->middleware('throttle:10,1');
+
+    Route::middleware(['throttle:60,1'])->group(function () {
+        // Authentication routes
+        Route::post('auth/logout', [AuthProxyController::class, 'logout']);
+        Route::get('auth/me', [AuthProxyController::class, 'me']);
+
+        // Audit log routes
+        Route::get('audit/logs', [AuthProxyController::class, 'auditLogs']);
+
+        // IP Management Service Routes - RESTful endpoints
+        Route::get('ip', [IPProxyController::class, 'index']);
+        Route::post('ip', [IPProxyController::class, 'store']);
+        Route::get('ip/{id}', [IPProxyController::class, 'show']);
+        Route::put('ip/{id}', [IPProxyController::class, 'update']);
+        Route::patch('ip/{id}', [IPProxyController::class, 'update']);
+        Route::delete('ip/{id}', [IPProxyController::class, 'destroy']);
+        Route::get('ip/{id}/history', [IPProxyController::class, 'history']);
+        Route::get('ip/{id}/audit', [IPProxyController::class, 'audit']);
+    });
+
 });
 
 /*

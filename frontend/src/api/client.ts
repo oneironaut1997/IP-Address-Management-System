@@ -2,17 +2,52 @@
  * API Client
  *
  * Axios instance with authentication interceptors for handling JWT tokens
- * via httpOnly cookies and automatic token refresh on 401 responses.
+ * stored in localStorage and automatic token refresh on 401 responses.
  *
- * SECURITY: Tokens are stored in httpOnly cookies (set by the backend)
- * instead of localStorage to prevent XSS attacks. The browser automatically
- * sends cookies with each request when using credentials: 'include'.
+ * SECURITY: Tokens are stored in localStorage for Bearer token authentication.
+ * The access token is sent via Authorization header with each request.
  *
  * @package API
  */
 
 import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios'
 import type { AuthResponse, APIResponse } from '@/types'
+
+/**
+ * Storage keys for authentication tokens
+ */
+const ACCESS_TOKEN_KEY = 'access_token'
+const REFRESH_TOKEN_KEY = 'refresh_token'
+
+/**
+ * Get access token from localStorage
+ */
+function getAccessToken(): string | null {
+  return localStorage.getItem(ACCESS_TOKEN_KEY)
+}
+
+/**
+ * Get refresh token from localStorage
+ */
+function getRefreshToken(): string | null {
+  return localStorage.getItem(REFRESH_TOKEN_KEY)
+}
+
+/**
+ * Store tokens in localStorage
+ */
+function setTokens(accessToken: string, refreshToken: string): void {
+  localStorage.setItem(ACCESS_TOKEN_KEY, accessToken)
+  localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken)
+}
+
+/**
+ * Clear tokens from localStorage
+ */
+function clearTokens(): void {
+  localStorage.removeItem(ACCESS_TOKEN_KEY)
+  localStorage.removeItem(REFRESH_TOKEN_KEY)
+}
 
 /**
  * API Version - used for all requests
@@ -39,16 +74,12 @@ const REQUEST_TIMEOUT = 10000
 /**
  * Axios instance with default configuration
  *
- * IMPORTANT: credentials: 'include' is required for cookies to be sent
- * with cross-origin requests. This is safe because:
- * 1. Tokens are stored in httpOnly cookies (not accessible to JS)
- * 2. The SameSite=Lax attribute prevents CSRF attacks
- * 3. The Secure flag is set in production (HTTPS only)
+ * Uses localStorage for token storage with Authorization header.
  */
 const api = axios.create({
   baseURL,
   timeout: REQUEST_TIMEOUT,
-  withCredentials: true, // Required for sending cookies with requests
+  withCredentials: false, // Not using cookies, using localStorage instead
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -58,10 +89,17 @@ const api = axios.create({
 /**
  * Request Interceptor
  *
- * Adds the API version prefix to all URLs and handles tokens via httpOnly cookies.
+ * Adds the API version prefix to all URLs and adds Authorization header
+ * with Bearer token from localStorage.
  */
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
+    // Add Authorization header with Bearer token
+    const accessToken = getAccessToken()
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`
+    }
+
     // Add API version prefix to URL
     if (config.url && !config.url.startsWith('/')) {
       config.url = `/${config.url}`
@@ -84,9 +122,7 @@ api.interceptors.request.use(
  * Handles 401 responses by attempting to refresh the token.
  * If refresh fails, redirects to login page.
  *
- * Note: Since tokens are in httpOnly cookies, we can't directly
- * access them. However, the refresh endpoint accepts the refresh_token
- * cookie automatically.
+ * Note: Tokens are stored in localStorage and sent via Authorization header.
  */
 api.interceptors.response.use(
   (response) => response,
@@ -100,31 +136,58 @@ api.interceptors.response.use(
 
     // Handle 401 Unauthorized
     if (error.response?.status === 401) {
+      // Skip token refresh for auth endpoints (login, refresh, register)
+      // These endpoints should return their own error messages, not trigger token refresh
+      const isAuthEndpoint = originalRequest.url?.includes('/auth/login') || 
+                            originalRequest.url?.includes('/auth/refresh') ||
+                            originalRequest.url?.includes('/auth/register')
+      
+      // Skip if this is an auth endpoint - return original error
+      if (isAuthEndpoint) {
+        return Promise.reject(error)
+      }
+
+      // Skip if no access token exists - user is not logged in
+      // Return original error instead of trying to refresh
+      const accessToken = getAccessToken()
+      if (!accessToken) {
+        return Promise.reject(error)
+      }
+
       originalRequest._retry = true
 
       try {
-        // Attempt to refresh the token
-        // The refresh token cookie is automatically included
+        // Attempt to refresh the token using the refresh token from localStorage
+        const refreshToken = getRefreshToken()
+        if (!refreshToken) {
+          throw new Error('No refresh token available')
+        }
+
         const response = await axios.post<APIResponse<AuthResponse>>(
-          `${baseURL}/auth/refresh`,
+          `${baseURL}/v1/auth/refresh`,
           {},
           {
-            withCredentials: true, // Important: required for cookie transmission
+            headers: {
+              Authorization: `Bearer ${refreshToken}`,
+            },
           }
         )
 
-        // Tokens are now in httpOnly cookies, so we don't need to
-        // store them in localStorage. The browser handles it.
-        if (!response.data.success) {
-          throw new Error('Token refresh failed')
+        // Store new tokens in localStorage
+        if (response.data.success && response.data.data) {
+          const { access_token, refresh_token } = response.data.data
+          setTokens(access_token, refresh_token)
+
+          // Retry the original request with new token
+          originalRequest.headers.Authorization = `Bearer ${access_token}`
+          return api(originalRequest)
         }
 
-        // Retry the original request
-        // Cookies will be automatically included
-        return api(originalRequest)
+        throw new Error('Token refresh failed')
       } catch (refreshError) {
-        // Token refresh failed, redirect to login
-        window.location.href = '/login'
+        // Token refresh failed, clear tokens and redirect to login
+        clearTokens()
+        // window.location.href = '/login'
         return Promise.reject(refreshError)
       }
     }

@@ -20,38 +20,47 @@ use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| Auth Routes
+| API v1 Routes
 |--------------------------------------------------------------------------
 */
 
-Route::prefix('auth')->middleware('throttle:5,1')->group(function () {
-    Route::post('register', [AuthController::class, 'register']);
-    Route::post('login', [AuthController::class, 'login']);
-    Route::post('refresh', [AuthController::class, 'refresh']);
-});
+Route::prefix('v1')->group(function () {
 
-/*
-|--------------------------------------------------------------------------
-| Protected Routes (JWT Required)
-|--------------------------------------------------------------------------
-|
-| These routes require a valid JWT token.
-|
-*/
+    /*
+    |--------------------------------------------------------------------------
+    | Auth Routes
+    |--------------------------------------------------------------------------
+    */
 
-Route::prefix('auth')->middleware('auth:api')->group(function () {
-    Route::post('logout', [AuthController::class, 'logout']);
-    Route::get('me', [AuthController::class, 'me']);
-});
+    Route::prefix('auth')->middleware('throttle:5,1')->group(function () {
+        Route::post('register', [AuthController::class, 'register']);
+        Route::post('login', [AuthController::class, 'login']);
+        Route::post('refresh', [AuthController::class, 'refresh']);
+    });
 
-/*
-|--------------------------------------------------------------------------
-| Activity Log Routes
-|--------------------------------------------------------------------------
-*/
+    /*
+    |--------------------------------------------------------------------------
+    | Protected Routes (JWT Required)
+    |--------------------------------------------------------------------------
+    |
+    | These routes require a valid JWT token.
+    |
+    */
 
-Route::prefix('activity')->middleware('auth:api')->group(function () {
-    Route::get('logs', [ActivityLogController::class, 'index']);
+    Route::prefix('auth')->middleware('auth:api')->group(function () {
+        Route::post('logout', [AuthController::class, 'logout']);
+        Route::get('me', [AuthController::class, 'me']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Activity Log Routes
+    |--------------------------------------------------------------------------
+    */
+
+    Route::prefix('activity')->middleware('auth:api')->group(function () {
+        Route::get('logs', [ActivityLogController::class, 'index']);
+    });
 });
 
 /*
