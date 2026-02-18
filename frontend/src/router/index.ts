@@ -95,11 +95,11 @@ const router = createRouter({
           name: 'ip-history',
           component: () => import('@/views/ip/IPHistoryView.vue'),
         },
-        // Audit Routes (Super Admin Only)
+        // Activity Routes (Super Admin Only)
         {
-          path: 'audit',
-          name: 'audit-dashboard',
-          component: () => import('@/views/audit/AuditDashboardView.vue'),
+          path: 'activity',
+          name: 'activity-dashboard',
+          component: () => import('@/views/activity/ActivityDashboardView.vue'),
           meta: { requiresSuperAdmin: true } as RouteMeta,
         },
       ],

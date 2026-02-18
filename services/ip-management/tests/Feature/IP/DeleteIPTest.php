@@ -3,6 +3,7 @@
 namespace Tests\Feature\IP;
 
 use App\Models\IPAddress;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -20,20 +21,17 @@ class DeleteIPTest extends TestCase
      */
     public function test_only_super_admin_can_delete(): void
     {
-        $ownerId = 'user-123';
-        $adminId = 'admin-456';
+        $owner = User::factory()->create(['role' => 'regular']);
+        $admin = User::factory()->create(['id' => 'admin-456', 'role' => 'super_admin']);
 
         $ip = IPAddress::create([
-            'user_id' => $ownerId,
+            'user_id' => $owner->id,
             'ip_address' => '192.168.1.1',
             'label' => 'Test Server',
             'type' => 'ipv4',
         ]);
 
-        $response = $this->withHeaders([
-            'X-User-ID' => $adminId,
-            'X-User-Role' => 'super_admin',
-        ])->deleteJson("/api/ip/{$ip->id}");
+        $response = $this->actingAs($admin)->deleteJson("/api/v1/ip/{$ip->id}");
 
         $response->assertStatus(204);
 
@@ -52,19 +50,16 @@ class DeleteIPTest extends TestCase
      */
     public function test_regular_user_cannot_delete(): void
     {
-        $ownerId = 'user-123';
+        $user = User::factory()->create(['role' => 'regular']);
 
         $ip = IPAddress::create([
-            'user_id' => $ownerId,
+            'user_id' => $user->id,
             'ip_address' => '192.168.1.1',
             'label' => 'Test Server',
             'type' => 'ipv4',
         ]);
 
-        $response = $this->withHeaders([
-            'X-User-ID' => $ownerId,
-            'X-User-Role' => 'regular',
-        ])->deleteJson("/api/ip/{$ip->id}");
+        $response = $this->actingAs($user)->deleteJson("/api/v1/ip/{$ip->id}");
 
         $response->assertStatus(403)
             ->assertJson([
@@ -87,12 +82,9 @@ class DeleteIPTest extends TestCase
      */
     public function test_cannot_delete_nonexistent_ip(): void
     {
-        $adminId = 'admin-456';
+        $admin = User::factory()->create(['id' => 'admin-456', 'role' => 'super_admin']);
 
-        $response = $this->withHeaders([
-            'X-User-ID' => $adminId,
-            'X-User-Role' => 'super_admin',
-        ])->deleteJson('/api/ip/non-existent-id');
+        $response = $this->actingAs($admin)->deleteJson('/api/v1/ip/non-existent-id');
 
         $response->assertStatus(404)
             ->assertJson([
@@ -108,25 +100,22 @@ class DeleteIPTest extends TestCase
      */
     public function test_delete_logs_activity(): void
     {
-        $ownerId = 'user-123';
-        $adminId = 'admin-456';
+        $owner = User::factory()->create(['role' => 'regular']);
+        $admin = User::factory()->create(['id' => 'admin-456', 'role' => 'super_admin']);
 
         $ip = IPAddress::create([
-            'user_id' => $ownerId,
+            'user_id' => $owner->id,
             'ip_address' => '192.168.1.1',
             'label' => 'Test Server',
             'type' => 'ipv4',
         ]);
 
-        $this->withHeaders([
-            'X-User-ID' => $adminId,
-            'X-User-Role' => 'super_admin',
-        ])->deleteJson("/api/ip/{$ip->id}");
+        $this->actingAs($admin)->deleteJson("/api/v1/ip/{$ip->id}");
 
         // Check history was created
         $this->assertDatabaseHas('ip_history', [
             'ip_address_id' => $ip->id,
-            'modified_by' => $adminId,
+            'modified_by' => $admin->id,
             'action' => 'deleted',
         ]);
 
@@ -134,7 +123,7 @@ class DeleteIPTest extends TestCase
         $this->assertDatabaseHas('activity_logs', [
             'subject_id' => $ip->id,
             'subject_type' => IPAddress::class,
-            'causer_id' => $adminId,
+            'causer_id' => $admin->id,
             'event' => 'ip.deleted',
         ]);
     }

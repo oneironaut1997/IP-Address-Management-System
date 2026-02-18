@@ -3,16 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Http\Resources\ActivityLogResource;
-use App\Services\AuditService;
+use App\Services\ActivityLogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
 /**
- * Class AuditController
+ * Class ActivityLogController
  *
- * HTTP Controller for audit log endpoints.
- * Delegates business logic to AuditService and uses API Resources
+ * HTTP Controller for activity log endpoints.
+ * Delegates business logic to ActivityLogService and uses API Resources
  * for consistent response formatting.
  *
  * Responsibilities:
@@ -20,30 +20,30 @@ use Illuminate\Http\Response;
  * - HTTP response formatting
  * - Delegating business logic to service layer
  */
-class AuditController extends Controller
+class ActivityLogController extends Controller
 {
     /**
-     * @param  AuditService  $auditService  The audit service
+     * @param  ActivityLogService  $activityLogService  The activity log service
      */
     public function __construct(
-        protected AuditService $auditService
+        protected ActivityLogService $activityLogService
     ) {}
 
     /**
-     * Get all audit logs with optional filtering.
+     * Get all activity logs with optional filtering.
      *
-     * Retrieves audit logs with related user information.
+     * Retrieves activity logs with related user information.
      * Supports filtering by event, user_id, and date range.
      * Results are ordered by creation date (newest first).
      *
      * @param  Request  $request  The HTTP request with optional filters
-     * @return JsonResponse The list of audit logs
+     * @return JsonResponse The list of activity logs
      */
     public function index(Request $request): JsonResponse
     {
-        $filters = $this->auditService->buildFilters($request->all());
+        $filters = $this->activityLogService->buildFilters($request->all());
         $perPage = (int) $request->input('per_page', 50);
-        $logs = $this->auditService->getAuditLogs($filters, $perPage);
+        $logs = $this->activityLogService->getActivityLogs($filters, $perPage);
 
         return response()->json([
             'success' => true,
@@ -58,21 +58,21 @@ class AuditController extends Controller
     }
 
     /**
-     * Get a single audit log by ID.
+     * Get a single activity log by ID.
      *
-     * @param  string  $id  The UUID of the audit log
-     * @return JsonResponse The audit log details
+     * @param  string  $id  The UUID of the activity log
+     * @return JsonResponse The activity log details
      */
     public function show(string $id): JsonResponse
     {
-        $log = $this->auditService->getAuditLogById($id);
+        $log = $this->activityLogService->getActivityLogById($id);
 
         if (! $log) {
             return response()->json([
                 'success' => false,
                 'error' => [
                     'code' => 'NOT_FOUND',
-                    'message' => 'Audit log not found.',
+                    'message' => 'Activity log not found.',
                 ],
             ], Response::HTTP_NOT_FOUND);
         }
@@ -86,13 +86,13 @@ class AuditController extends Controller
     /**
      * Get available event types for filtering.
      *
-     * Returns a list of unique event types stored in the audit logs.
+     * Returns a list of unique event types stored in the activity logs.
      *
      * @return JsonResponse List of event types
      */
     public function eventTypes(): JsonResponse
     {
-        $types = $this->auditService->getEventTypes();
+        $types = $this->activityLogService->getEventTypes();
 
         return response()->json([
             'success' => true,

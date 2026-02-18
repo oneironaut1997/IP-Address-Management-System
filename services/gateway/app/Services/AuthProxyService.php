@@ -23,7 +23,7 @@ class AuthProxyService extends ProxyService
      */
     public function login(Request $request): Response
     {
-        return $this->forwardToAuthService('post', '/api/auth/login', $request);
+        return $this->forwardToAuthService('post', $this->buildAuthEndpoint('login'), $request);
     }
 
     /**
@@ -33,7 +33,7 @@ class AuthProxyService extends ProxyService
      */
     public function register(Request $request): Response
     {
-        return $this->forwardToAuthService('post', '/api/auth/register', $request);
+        return $this->forwardToAuthService('post', $this->buildAuthEndpoint('register'), $request);
     }
 
     /**
@@ -43,7 +43,20 @@ class AuthProxyService extends ProxyService
      */
     public function refreshToken(Request $request): Response
     {
-        return $this->forwardToAuthService('post', '/api/auth/refresh', $request);
+        return $this->forwardToAuthService('post', $this->buildAuthEndpoint('refresh'), $request);
+    }
+
+    /**
+     * Proxy token refresh request to auth-service with explicit refresh token.
+     *
+     * This method passes the refresh token as a cookie header for secure transmission.
+     *
+     * @param  Request  $request  The HTTP request
+     * @param  string  $refreshToken  The refresh token to send
+     */
+    public function refreshTokenWithCookie(Request $request, string $refreshToken): Response
+    {
+        return $this->forwardToAuthServiceWithCookie('post', $this->buildAuthEndpoint('refresh'), $request, $refreshToken);
     }
 
     /**
@@ -53,7 +66,7 @@ class AuthProxyService extends ProxyService
      */
     public function logout(Request $request): Response
     {
-        return $this->forwardToAuthService('post', '/api/auth/logout', $request);
+        return $this->forwardToAuthService('post', $this->buildAuthEndpoint('logout'), $request);
     }
 
     /**
@@ -63,17 +76,17 @@ class AuthProxyService extends ProxyService
      */
     public function getUserInfo(Request $request): Response
     {
-        return $this->forwardToAuthService('get', '/api/auth/me', $request);
+        return $this->forwardToAuthService('get', $this->buildAuthEndpoint('me'), $request);
     }
 
     /**
-     * Get audit logs from auth-service.
+     * Get activity logs from auth-service.
      *
      * @param  Request  $request  The HTTP request with query parameters
      */
-    public function getAuditLogs(Request $request): Response
+    public function getActivityLogs(Request $request): Response
     {
-        return $this->forwardToAuthService('get', '/api/audit/logs', $request);
+        return $this->forwardToAuthService('get', $this->buildActivityLogEndpoint(), $request);
     }
 
     /**
@@ -99,7 +112,7 @@ class AuthProxyService extends ProxyService
 
         // Fetch authentication logs from auth-service
         if ($type === 'auth' || $type === 'all') {
-            $authResponse = $this->forwardToAuthService('get', '/api/audit/logs', $request);
+            $authResponse = $this->forwardToAuthService('get', $this->buildActivityLogEndpoint(), $request);
 
             if ($authResponse->successful()) {
                 $authData = $authResponse->json();
@@ -117,7 +130,7 @@ class AuthProxyService extends ProxyService
 
         // Fetch IP activities from ip-management service
         if ($type === 'ip' || $type === 'all') {
-            $ipResponse = $this->forwardToIPService('get', '/api/activity/logs', $request);
+            $ipResponse = $this->forwardToIPService('get', '/api/v1/activity/logs', $request);
 
             if ($ipResponse->successful()) {
                 $ipData = $ipResponse->json();
@@ -163,6 +176,24 @@ class AuthProxyService extends ProxyService
      */
     public function getIPActivities(Request $request): Response
     {
-        return $this->forwardToIPService('get', '/api/activity/logs', $request);
+        return $this->forwardToIPService('get', '/api/v1/activity/logs', $request);
+    }
+
+    /**
+     * Build auth endpoint path.
+     *
+     * @param  string  $endpoint  The endpoint (login, register, etc.)
+     */
+    protected function buildAuthEndpoint(string $endpoint): string
+    {
+        return '/api/auth/'.$endpoint;
+    }
+
+    /**
+     * Build activity log endpoint path.
+     */
+    protected function buildActivityLogEndpoint(): string
+    {
+        return '/api/activity/logs';
     }
 }

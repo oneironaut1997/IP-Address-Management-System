@@ -40,7 +40,7 @@ class IPProxyService extends ProxyService
      */
     public function getAllIPAddresses(Request $request): Response
     {
-        return $this->forwardToIPService('get', '/api/ip', $request);
+        return $this->forwardToIPService('get', $this->buildEndpoint(), $request);
     }
 
     /**
@@ -50,7 +50,7 @@ class IPProxyService extends ProxyService
      */
     public function createIPAddress(Request $request): Response
     {
-        return $this->forwardToIPService('post', '/api/ip', $request);
+        return $this->forwardToIPService('post', $this->buildEndpoint(), $request);
     }
 
     /**
@@ -61,7 +61,7 @@ class IPProxyService extends ProxyService
      */
     public function getIPAddress(string $id, Request $request): Response
     {
-        return $this->forwardToIPService('get', "/api/ip/{$id}", $request);
+        return $this->forwardToIPService('get', $this->buildEndpoint($id), $request);
     }
 
     /**
@@ -72,7 +72,7 @@ class IPProxyService extends ProxyService
      */
     public function updateIPAddress(string $id, Request $request): Response
     {
-        return $this->forwardToIPService('put', "/api/ip/{$id}", $request);
+        return $this->forwardToIPService('put', $this->buildEndpoint($id), $request);
     }
 
     /**
@@ -83,7 +83,7 @@ class IPProxyService extends ProxyService
      */
     public function deleteIPAddress(string $id, Request $request): Response
     {
-        return $this->forwardToIPService('delete', "/api/ip/{$id}", $request);
+        return $this->forwardToIPService('delete', $this->buildEndpoint($id), $request);
     }
 
     /**
@@ -94,7 +94,7 @@ class IPProxyService extends ProxyService
      */
     public function getIPAddressHistory(string $id, Request $request): Response
     {
-        return $this->forwardToIPService('get', "/api/ip/{$id}/history", $request);
+        return $this->forwardToIPService('get', $this->buildEndpoint("{$id}/history"), $request);
     }
 
     /**
@@ -105,7 +105,7 @@ class IPProxyService extends ProxyService
      */
     public function getIPAddressAudit(string $id, Request $request): Response
     {
-        return $this->forwardToIPService('get', "/api/ip/{$id}/audit", $request);
+        return $this->forwardToIPService('get', $this->buildEndpoint("{$id}/audit"), $request);
     }
 
     /**

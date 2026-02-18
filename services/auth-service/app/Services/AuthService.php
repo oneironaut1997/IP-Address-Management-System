@@ -24,15 +24,24 @@ class AuthService
 {
     /**
      * Access token time-to-live in minutes.
-     * Access tokens expire after 1 hour.
+     * Loaded from config for environment-specific settings.
      */
-    protected int $accessTokenTtl = 60;
+    protected int $accessTokenTtl;
 
     /**
      * Refresh token time-to-live in minutes.
-     * Refresh tokens expire after 7 days.
+     * Loaded from config for environment-specific settings.
      */
-    protected int $refreshTokenTtl = 10080;
+    protected int $refreshTokenTtl;
+
+    /**
+     * Constructor - load config values
+     */
+    public function __construct()
+    {
+        $this->accessTokenTtl = config('jwt.ttl', 60);
+        $this->refreshTokenTtl = config('jwt.refresh_ttl', 10080);
+    }
 
     /**
      * Register a new user.
@@ -85,16 +94,19 @@ class AuthService
 
         // Store refresh token in Redis with TTL
         $refreshJti = JWTAuth::setToken($refreshToken)->getPayload()->get('jti');
+        $refreshTtlSeconds = $this->refreshTokenTtl * 60;
+
         Redis::setex(
             "refresh:{$refreshJti}",
-            $this->refreshTokenTtl * 60,
+            $refreshTtlSeconds,
             $user->id
         );
 
         // Also store in user's token set for efficient logout
-        Redis::sadd("user:{$user->id}:refresh_tokens", $refreshJti);
-        // Set expiry on the set to match refresh token TTL
-        Redis::expire("user:{$user->id}:refresh_tokens", $this->refreshTokenTtl * 60);
+        Redis::pipeline(function ($pipe) use ($user, $refreshJti, $refreshTtlSeconds) {
+            $pipe->sadd("user:{$user->id}:refresh_tokens", $refreshJti);
+            $pipe->expire("user:{$user->id}:refresh_tokens", $refreshTtlSeconds);
+        });
 
         // Create user session for audit trail
         $session = UserSession::create([
@@ -139,9 +151,13 @@ class AuthService
         $userTokenSet = "user:{$user->id}:refresh_tokens";
         $refreshJtis = Redis::smembers($userTokenSet);
 
-        // Delete each refresh token
-        foreach ($refreshJtis as $refreshJti) {
-            Redis::del("refresh:{$refreshJti}");
+        // Delete each refresh token using pipeline for efficiency
+        if (! empty($refreshJtis)) {
+            Redis::pipeline(function ($pipe) use ($refreshJtis) {
+                foreach ($refreshJtis as $refreshJti) {
+                    $pipe->del("refresh:{$refreshJti}");
+                }
+            });
         }
 
         // Delete the user's token set
@@ -230,15 +246,19 @@ class AuthService
 
             // Store new refresh token in Redis
             $newRefreshJti = JWTAuth::setToken($newRefreshToken)->getPayload()->get('jti');
+            $refreshTtlSeconds = $this->refreshTokenTtl * 60;
+
             Redis::setex(
                 "refresh:{$newRefreshJti}",
-                $this->refreshTokenTtl * 60,
+                $refreshTtlSeconds,
                 $user->id
             );
 
-            // Add to user's token set for efficient logout
-            Redis::sadd("user:{$user->id}:refresh_tokens", $newRefreshJti);
-            Redis::expire("user:{$user->id}:refresh_tokens", $this->refreshTokenTtl * 60);
+            // Add to user's token set for efficient logout - use pipeline
+            Redis::pipeline(function ($pipe) use ($user, $newRefreshJti, $refreshTtlSeconds) {
+                $pipe->sadd("user:{$user->id}:refresh_tokens", $newRefreshJti);
+                $pipe->expire("user:{$user->id}:refresh_tokens", $refreshTtlSeconds);
+            });
 
             // Update user session
             UserSession::where('token_jti', $refreshJti)

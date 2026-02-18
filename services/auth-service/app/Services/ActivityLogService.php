@@ -7,17 +7,17 @@ use Illuminate\Database\Eloquent\Collection;
 use Spatie\Activitylog\Models\Activity;
 
 /**
- * Class AuditService
+ * Class ActivityLogService
  *
- * Service layer for audit log business logic.
- * Handles retrieval, filtering, and transformation of authentication audit logs.
+ * Service layer for activity log business logic.
+ * Handles retrieval, filtering, and transformation of authentication activity logs.
  *
- * This service encapsulates all audit-related business rules and separates
+ * This service encapsulates all activity log-related business rules and separates
  * them from HTTP concerns in the controller layer.
  *
- * Uses Spatie Activity Log for consistent audit logging across services.
+ * Uses Spatie Activity Log for consistent activity logging across services.
  */
-class AuditService
+class ActivityLogService
 {
     /**
      * Default number of items per page.
@@ -30,7 +30,7 @@ class AuditService
     protected int $maxPerPage = 100;
 
     /**
-     * Get all audit logs with optional filtering and pagination.
+     * Get all activity logs with optional filtering and pagination.
      *
      * Supports filtering by event, user_id, subject_type, and date range.
      * Results are ordered by creation date (newest first).
@@ -38,7 +38,7 @@ class AuditService
      * @param  array  $filters  Optional filters (event, user_id, subject_type, from, to)
      * @param  int  $perPage  Number of items per page (default: 50, max: 100)
      */
-    public function getAuditLogs(array $filters = [], int $perPage = 50): LengthAwarePaginator
+    public function getActivityLogs(array $filters = [], int $perPage = 50): LengthAwarePaginator
     {
         // Clamp perPage to reasonable bounds
         $perPage = min(max($perPage, 1), $this->maxPerPage);
@@ -55,11 +55,11 @@ class AuditService
     }
 
     /**
-     * Get a single audit log by ID.
+     * Get a single activity log by ID.
      *
-     * @param  string  $id  The UUID of the audit log
+     * @param  string  $id  The UUID of the activity log
      */
-    public function getAuditLogById(string $id): ?Activity
+    public function getActivityLogById(string $id): ?Activity
     {
         return Activity::find($id);
     }
@@ -67,7 +67,7 @@ class AuditService
     /**
      * Get available event types for filtering.
      *
-     * Returns a list of unique event types stored in the audit logs.
+     * Returns a list of unique event types stored in the activity logs.
      */
     public function getEventTypes(): Collection
     {
@@ -77,7 +77,7 @@ class AuditService
     }
 
     /**
-     * Apply filters to the audit log query.
+     * Apply filters to the activity log query.
      *
      * @param  \Illuminate\Database\Eloquent\Builder  $query
      */

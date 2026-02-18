@@ -1,16 +1,16 @@
 <script setup lang="ts">
 /**
- * Audit Dashboard View
+ * Activity Dashboard View
  *
- * Displays system audit logs for super administrators.
+ * Displays system activity logs for super administrators.
  * Includes filtering by event type and detailed log information.
  *
- * @package Views/Audit
+ * @package Views/Activity
  */
 
 import { ref, onMounted, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import { useAuditStore } from '@/stores/audit'
+import { useActivityStore } from '@/stores/activity'
 import type { AuditLog, AuditLogType } from '@/types'
 import {
   Shield,
@@ -32,7 +32,7 @@ import {
 import { cn } from '@/lib/utils'
 
 const authStore = useAuthStore()
-const auditStore = useAuditStore()
+const activityStore = useActivityStore()
 
 const selectedFilter = ref('')
 const selectedTypeFilter = ref<AuditLogType>('all')
@@ -86,13 +86,13 @@ function truncate(str: string, length: number): string {
 }
 
 function applyFilter(): void {
-  auditStore.setEventFilter(selectedFilter.value)
+  activityStore.setEventFilter(selectedFilter.value)
 }
 
 function clearFilter(): void {
   selectedFilter.value = ''
   selectedTypeFilter.value = 'all'
-  auditStore.clearFilter()
+  activityStore.clearFilter()
 }
 
 function showDetails(log: AuditLog): void {
@@ -100,7 +100,7 @@ function showDetails(log: AuditLog): void {
 }
 
 async function refreshLogs(): Promise<void> {
-  await auditStore.fetchAllLogs(selectedTypeFilter.value)
+  await activityStore.fetchAllLogs(selectedTypeFilter.value)
 }
 
 watch(selectedTypeFilter, () => {
@@ -109,7 +109,7 @@ watch(selectedTypeFilter, () => {
 
 onMounted(() => {
   if (authStore.isSuperAdmin) {
-    auditStore.fetchAllLogs()
+    activityStore.fetchAllLogs()
   }
 })
 </script>
@@ -120,7 +120,7 @@ onMounted(() => {
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
         <div class="flex items-center gap-3">
-          <h1 class="text-2xl font-bold tracking-tight">Audit Dashboard</h1>
+          <h1 class="text-2xl font-bold tracking-tight">Activity Dashboard</h1>
           <span
             v-if="authStore.isSuperAdmin"
             class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-700"
@@ -129,7 +129,7 @@ onMounted(() => {
             Super Admin
           </span>
         </div>
-        <p class="text-muted-foreground">View system audit logs and user activity</p>
+        <p class="text-muted-foreground">View system activity logs and user activity</p>
       </div>
     </div>
 
@@ -152,7 +152,7 @@ onMounted(() => {
       </router-link>
     </div>
 
-    <!-- Audit Content -->
+    <!-- Activity Content -->
     <template v-else>
       <!-- Filters -->
       <div class="flex flex-wrap items-end gap-4 p-4 rounded-xl border bg-card">
@@ -180,7 +180,7 @@ onMounted(() => {
               @change="applyFilter"
             >
               <option value="">All Events</option>
-              <option v-for="type in auditStore.eventTypes" :key="type" :value="type">
+              <option v-for="type in activityStore.eventTypes" :key="type" :value="type">
                 {{ formatEventType(type) }}
               </option>
             </select>
@@ -196,34 +196,34 @@ onMounted(() => {
         </button>
         <button
           class="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
-          :disabled="auditStore.loading"
+          :disabled="activityStore.loading"
           @click="refreshLogs"
         >
-          <RefreshCw :class="cn('w-4 h-4', auditStore.loading && 'animate-spin')" />
-          {{ auditStore.loading ? 'Refreshing...' : 'Refresh' }}
+          <RefreshCw :class="cn('w-4 h-4', activityStore.loading && 'animate-spin')" />
+          {{ activityStore.loading ? 'Refreshing...' : 'Refresh' }}
         </button>
       </div>
 
       <!-- Loading State -->
       <div
-        v-if="auditStore.loading && !auditStore.logs.length"
+        v-if="activityStore.loading && !activityStore.logs.length"
         class="flex flex-col items-center justify-center py-12 rounded-xl border bg-card"
       >
         <Loader2 class="w-8 h-8 animate-spin text-primary mb-3" />
-        <p class="text-muted-foreground">Loading audit logs...</p>
+        <p class="text-muted-foreground">Loading activity logs...</p>
       </div>
 
       <!-- Empty State -->
       <div
-        v-else-if="!auditStore.filteredLogs.length"
+        v-else-if="!activityStore.filteredLogs.length"
         class="flex flex-col items-center justify-center py-12 rounded-xl border bg-card"
       >
         <ScrollText class="w-12 h-12 text-muted-foreground/50 mb-4" />
-        <h3 class="text-lg font-medium mb-1">No Audit Logs</h3>
-        <p class="text-muted-foreground text-sm">There are no audit logs to display</p>
+        <h3 class="text-lg font-medium mb-1">No Activity Logs</h3>
+        <p class="text-muted-foreground text-sm">There are no activity logs to display</p>
       </div>
 
-      <!-- Audit Table -->
+      <!-- Activity Table -->
       <div v-else class="rounded-xl border bg-card overflow-hidden">
         <div class="overflow-x-auto">
           <table class="w-full text-sm">
@@ -239,7 +239,7 @@ onMounted(() => {
             </thead>
             <tbody class="divide-y">
               <tr
-                v-for="log in auditStore.filteredLogs"
+                v-for="log in activityStore.filteredLogs"
                 :key="log.id"
                 class="hover:bg-muted/50 transition-colors"
               >
@@ -293,8 +293,8 @@ onMounted(() => {
       </div>
 
       <!-- Stats Summary -->
-      <div v-if="auditStore.logs.length" class="text-sm text-muted-foreground">
-        Showing {{ auditStore.filteredLogs.length }} of {{ auditStore.logs.length }} audit log entries
+      <div v-if="activityStore.logs.length" class="text-sm text-muted-foreground">
+        Showing {{ activityStore.filteredLogs.length }} of {{ activityStore.logs.length }} activity log entries
       </div>
     </template>
 
@@ -311,7 +311,7 @@ onMounted(() => {
               <FileText class="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h3 class="font-semibold">Audit Log Details</h3>
+              <h3 class="font-semibold">Activity Log Details</h3>
               <p class="text-sm text-muted-foreground">Complete log information</p>
             </div>
           </div>

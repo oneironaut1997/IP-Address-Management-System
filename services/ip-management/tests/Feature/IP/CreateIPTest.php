@@ -21,12 +21,9 @@ class CreateIPTest extends TestCase
      */
     public function test_can_create_ipv4_address(): void
     {
-        $userId = 'user-123';
+        $user = User::factory()->create(['role' => 'regular']);
 
-        $response = $this->withHeaders([
-            'X-User-ID' => $userId,
-            'X-User-Role' => 'regular',
-        ])->postJson('/api/ip', [
+        $response = $this->actingAs($user)->postJson('/api/v1/ip', [
             'ip_address' => '192.168.1.1',
             'label' => 'Test Server',
             'comment' => 'Test comment',
@@ -52,13 +49,13 @@ class CreateIPTest extends TestCase
             ->assertJsonPath('data.ip_address', '192.168.1.1')
             ->assertJsonPath('data.label', 'Test Server')
             ->assertJsonPath('data.type', 'ipv4')
-            ->assertJsonPath('data.user_id', $userId);
+            ->assertJsonPath('data.user_id', $user->id);
 
         $this->assertDatabaseHas('ip_addresses', [
             'ip_address' => '192.168.1.1',
             'label' => 'Test Server',
             'type' => 'ipv4',
-            'user_id' => $userId,
+            'user_id' => $user->id,
         ]);
     }
 
@@ -67,12 +64,9 @@ class CreateIPTest extends TestCase
      */
     public function test_can_create_ipv6_address(): void
     {
-        $userId = 'user-123';
+        $user = User::factory()->create(['role' => 'regular']);
 
-        $response = $this->withHeaders([
-            'X-User-ID' => $userId,
-            'X-User-Role' => 'regular',
-        ])->postJson('/api/ip', [
+        $response = $this->actingAs($user)->postJson('/api/v1/ip', [
             'ip_address' => '2001:0db8:85a3:0000:0000:8a2e:0370:7334',
             'label' => 'IPv6 Server',
             'comment' => 'Test IPv6',
@@ -93,12 +87,9 @@ class CreateIPTest extends TestCase
      */
     public function test_cannot_create_invalid_ip(): void
     {
-        $userId = 'user-123';
+        $user = User::factory()->create(['role' => 'regular']);
 
-        $response = $this->withHeaders([
-            'X-User-ID' => $userId,
-            'X-User-Role' => 'regular',
-        ])->postJson('/api/ip', [
+        $response = $this->actingAs($user)->postJson('/api/v1/ip', [
             'ip_address' => 'invalid-ip-address',
             'label' => 'Invalid IP',
         ]);
@@ -118,12 +109,9 @@ class CreateIPTest extends TestCase
      */
     public function test_requires_ip_address(): void
     {
-        $userId = 'user-123';
+        $user = User::factory()->create(['role' => 'regular']);
 
-        $response = $this->withHeaders([
-            'X-User-ID' => $userId,
-            'X-User-Role' => 'regular',
-        ])->postJson('/api/ip', [
+        $response = $this->actingAs($user)->postJson('/api/v1/ip', [
             'label' => 'Test Server',
         ]);
 
@@ -136,12 +124,9 @@ class CreateIPTest extends TestCase
      */
     public function test_requires_label(): void
     {
-        $userId = 'user-123';
+        $user = User::factory()->create(['role' => 'regular']);
 
-        $response = $this->withHeaders([
-            'X-User-ID' => $userId,
-            'X-User-Role' => 'regular',
-        ])->postJson('/api/ip', [
+        $response = $this->actingAs($user)->postJson('/api/v1/ip', [
             'ip_address' => '192.168.1.1',
         ]);
 
@@ -154,12 +139,9 @@ class CreateIPTest extends TestCase
      */
     public function test_create_logs_activity(): void
     {
-        $userId = 'user-123';
+        $user = User::factory()->create(['role' => 'regular']);
 
-        $response = $this->withHeaders([
-            'X-User-ID' => $userId,
-            'X-User-Role' => 'regular',
-        ])->postJson('/api/ip', [
+        $response = $this->actingAs($user)->postJson('/api/v1/ip', [
             'ip_address' => '192.168.1.1',
             'label' => 'Test Server',
         ]);
@@ -169,7 +151,7 @@ class CreateIPTest extends TestCase
         // Check history was created
         $this->assertDatabaseHas('ip_history', [
             'ip_address_id' => $ipId,
-            'modified_by' => $userId,
+            'modified_by' => $user->id,
             'action' => 'created',
         ]);
 
@@ -177,7 +159,7 @@ class CreateIPTest extends TestCase
         $this->assertDatabaseHas('activity_logs', [
             'subject_id' => $ipId,
             'subject_type' => IPAddress::class,
-            'causer_id' => $userId,
+            'causer_id' => $user->id,
             'event' => 'ip.created',
         ]);
     }

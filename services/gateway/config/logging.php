@@ -127,6 +127,17 @@ return [
             'path' => storage_path('logs/laravel.log'),
         ],
 
+        //
+        // Gateway-specific channel for structured logging
+        //
+        'gateway' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/gateway.log'),
+            'level' => env('LOG_LEVEL', 'info'),
+            'days' => 14,
+            'replace_placeholders' => true,
+        ],
+
     ],
 
 ];

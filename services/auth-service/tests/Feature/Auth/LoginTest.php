@@ -35,8 +35,21 @@ class LoginTest extends TestCase
 
         // Mock Redis for login
         Redis::shouldReceive('setex')->andReturn(true);
-        Redis::shouldReceive('sadd')->andReturn(1);
-        Redis::shouldReceive('expire')->andReturn(true);
+        Redis::shouldReceive('pipeline')->andReturnUsing(function ($callback) {
+            $mockPipe = new class
+            {
+                public function sadd($key, $value)
+                {
+                    return 1;
+                }
+
+                public function expire($key, $ttl)
+                {
+                    return true;
+                }
+            };
+            $callback($mockPipe);
+        });
 
         $response = $this->postJson('/api/auth/login', [
             'email' => 'test@example.com',
@@ -149,8 +162,21 @@ class LoginTest extends TestCase
 
         // Mock Redis for login
         Redis::shouldReceive('setex')->andReturn(true);
-        Redis::shouldReceive('sadd')->andReturn(1);
-        Redis::shouldReceive('expire')->andReturn(true);
+        Redis::shouldReceive('pipeline')->andReturnUsing(function ($callback) {
+            $mockPipe = new class
+            {
+                public function sadd($key, $value)
+                {
+                    return 1;
+                }
+
+                public function expire($key, $ttl)
+                {
+                    return true;
+                }
+            };
+            $callback($mockPipe);
+        });
 
         $this->postJson('/api/auth/login', [
             'email' => 'test@example.com',
@@ -178,8 +204,21 @@ class LoginTest extends TestCase
 
         // Mock Redis for login
         Redis::shouldReceive('setex')->andReturn(true);
-        Redis::shouldReceive('sadd')->andReturn(1);
-        Redis::shouldReceive('expire')->andReturn(true);
+        Redis::shouldReceive('pipeline')->andReturnUsing(function ($callback) {
+            $mockPipe = new class
+            {
+                public function sadd($key, $value)
+                {
+                    return 1;
+                }
+
+                public function expire($key, $ttl)
+                {
+                    return true;
+                }
+            };
+            $callback($mockPipe);
+        });
 
         $response = $this->postJson('/api/auth/login', [
             'email' => 'admin@example.com',

@@ -3,6 +3,7 @@
 namespace Tests\Feature\IP;
 
 use App\Models\IPAddress;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -20,20 +21,17 @@ class UpdateIPTest extends TestCase
      */
     public function test_owner_can_update_own_ip(): void
     {
-        $userId = 'user-123';
+        $user = User::factory()->create(['role' => 'regular']);
 
         $ip = IPAddress::create([
-            'user_id' => $userId,
+            'user_id' => $user->id,
             'ip_address' => '192.168.1.1',
             'label' => 'Original Label',
             'comment' => 'Original comment',
             'type' => 'ipv4',
         ]);
 
-        $response = $this->withHeaders([
-            'X-User-ID' => $userId,
-            'X-User-Role' => 'regular',
-        ])->putJson("/api/ip/{$ip->id}", [
+        $response = $this->actingAs($user)->putJson("/api/v1/ip/{$ip->id}", [
             'label' => 'Updated Label',
             'comment' => 'Updated comment',
         ]);
@@ -58,20 +56,17 @@ class UpdateIPTest extends TestCase
      */
     public function test_non_owner_cannot_update_others_ip(): void
     {
-        $ownerId = 'user-123';
-        $otherUserId = 'user-456';
+        $owner = User::factory()->create(['role' => 'regular']);
+        $otherUser = User::factory()->create(['role' => 'regular']);
 
         $ip = IPAddress::create([
-            'user_id' => $ownerId,
+            'user_id' => $owner->id,
             'ip_address' => '192.168.1.1',
             'label' => 'Original Label',
             'type' => 'ipv4',
         ]);
 
-        $response = $this->withHeaders([
-            'X-User-ID' => $otherUserId,
-            'X-User-Role' => 'regular',
-        ])->putJson("/api/ip/{$ip->id}", [
+        $response = $this->actingAs($otherUser)->putJson("/api/v1/ip/{$ip->id}", [
             'label' => 'Hacked Label',
         ]);
 
@@ -94,20 +89,17 @@ class UpdateIPTest extends TestCase
      */
     public function test_super_admin_can_update_any_ip(): void
     {
-        $ownerId = 'user-123';
-        $adminId = 'admin-456';
+        $owner = User::factory()->create(['role' => 'regular']);
+        $admin = User::factory()->create(['id' => 'admin-456', 'role' => 'super_admin']);
 
         $ip = IPAddress::create([
-            'user_id' => $ownerId,
+            'user_id' => $owner->id,
             'ip_address' => '192.168.1.1',
             'label' => 'Original Label',
             'type' => 'ipv4',
         ]);
 
-        $response = $this->withHeaders([
-            'X-User-ID' => $adminId,
-            'X-User-Role' => 'super_admin',
-        ])->putJson("/api/ip/{$ip->id}", [
+        $response = $this->actingAs($admin)->putJson("/api/v1/ip/{$ip->id}", [
             'label' => 'Admin Updated Label',
         ]);
 
@@ -125,12 +117,9 @@ class UpdateIPTest extends TestCase
      */
     public function test_cannot_update_nonexistent_ip(): void
     {
-        $userId = 'user-123';
+        $user = User::factory()->create(['role' => 'regular']);
 
-        $response = $this->withHeaders([
-            'X-User-ID' => $userId,
-            'X-User-Role' => 'regular',
-        ])->putJson('/api/ip/non-existent-id', [
+        $response = $this->actingAs($user)->putJson('/api/v1/ip/non-existent-id', [
             'label' => 'Updated Label',
         ]);
 
@@ -148,19 +137,16 @@ class UpdateIPTest extends TestCase
      */
     public function test_update_requires_label(): void
     {
-        $userId = 'user-123';
+        $user = User::factory()->create(['role' => 'regular']);
 
         $ip = IPAddress::create([
-            'user_id' => $userId,
+            'user_id' => $user->id,
             'ip_address' => '192.168.1.1',
             'label' => 'Original Label',
             'type' => 'ipv4',
         ]);
 
-        $response = $this->withHeaders([
-            'X-User-ID' => $userId,
-            'X-User-Role' => 'regular',
-        ])->putJson("/api/ip/{$ip->id}", [
+        $response = $this->actingAs($user)->putJson("/api/v1/ip/{$ip->id}", [
             'comment' => 'Only comment',
         ]);
 
@@ -173,26 +159,23 @@ class UpdateIPTest extends TestCase
      */
     public function test_update_logs_activity_with_changes(): void
     {
-        $userId = 'user-123';
+        $user = User::factory()->create(['role' => 'regular']);
 
         $ip = IPAddress::create([
-            'user_id' => $userId,
+            'user_id' => $user->id,
             'ip_address' => '192.168.1.1',
             'label' => 'Original Label',
             'type' => 'ipv4',
         ]);
 
-        $this->withHeaders([
-            'X-User-ID' => $userId,
-            'X-User-Role' => 'regular',
-        ])->putJson("/api/ip/{$ip->id}", [
+        $this->actingAs($user)->putJson("/api/v1/ip/{$ip->id}", [
             'label' => 'Updated Label',
         ]);
 
         // Check history was created with old and new values
         $this->assertDatabaseHas('ip_history', [
             'ip_address_id' => $ip->id,
-            'modified_by' => $userId,
+            'modified_by' => $user->id,
             'action' => 'updated',
         ]);
 
@@ -200,7 +183,7 @@ class UpdateIPTest extends TestCase
         $this->assertDatabaseHas('activity_logs', [
             'subject_id' => $ip->id,
             'subject_type' => IPAddress::class,
-            'causer_id' => $userId,
+            'causer_id' => $user->id,
             'event' => 'ip.updated',
         ]);
     }

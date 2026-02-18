@@ -3,6 +3,7 @@
 namespace Tests\Feature\IP;
 
 use App\Models\IPAddress;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -20,12 +21,9 @@ class AuditLoggingTest extends TestCase
      */
     public function test_create_logs_activity(): void
     {
-        $userId = 'user-123';
+        $user = User::factory()->create(['role' => 'regular']);
 
-        $response = $this->withHeaders([
-            'X-User-ID' => $userId,
-            'X-User-Role' => 'regular',
-        ])->postJson('/api/ip', [
+        $response = $this->actingAs($user)->postJson('/api/v1/ip', [
             'ip_address' => '192.168.1.1',
             'label' => 'Test Server',
             'comment' => 'Test comment',
@@ -36,7 +34,7 @@ class AuditLoggingTest extends TestCase
         // Check ip_history table
         $this->assertDatabaseHas('ip_history', [
             'ip_address_id' => $ipId,
-            'modified_by' => $userId,
+            'modified_by' => $user->id,
             'action' => 'created',
         ]);
 
@@ -44,7 +42,7 @@ class AuditLoggingTest extends TestCase
         $this->assertDatabaseHas('activity_logs', [
             'subject_id' => $ipId,
             'subject_type' => IPAddress::class,
-            'causer_id' => $userId,
+            'causer_id' => $user->id,
             'event' => 'ip.created',
             'description' => 'ip.created',
         ]);
@@ -55,20 +53,17 @@ class AuditLoggingTest extends TestCase
      */
     public function test_update_logs_activity_with_changes(): void
     {
-        $userId = 'user-123';
+        $user = User::factory()->create(['role' => 'regular']);
 
         $ip = IPAddress::create([
-            'user_id' => $userId,
+            'user_id' => $user->id,
             'ip_address' => '192.168.1.1',
             'label' => 'Original Label',
             'comment' => 'Original comment',
             'type' => 'ipv4',
         ]);
 
-        $this->withHeaders([
-            'X-User-ID' => $userId,
-            'X-User-Role' => 'regular',
-        ])->putJson("/api/ip/{$ip->id}", [
+        $this->actingAs($user)->putJson("/api/v1/ip/{$ip->id}", [
             'label' => 'Updated Label',
             'comment' => 'Updated comment',
         ]);
@@ -76,7 +71,7 @@ class AuditLoggingTest extends TestCase
         // Check ip_history table has old and new values
         $this->assertDatabaseHas('ip_history', [
             'ip_address_id' => $ip->id,
-            'modified_by' => $userId,
+            'modified_by' => $user->id,
             'action' => 'updated',
         ]);
 
@@ -84,7 +79,7 @@ class AuditLoggingTest extends TestCase
         $this->assertDatabaseHas('activity_logs', [
             'subject_id' => $ip->id,
             'subject_type' => IPAddress::class,
-            'causer_id' => $userId,
+            'causer_id' => $user->id,
             'event' => 'ip.updated',
         ]);
     }
@@ -94,25 +89,22 @@ class AuditLoggingTest extends TestCase
      */
     public function test_delete_logs_activity(): void
     {
-        $ownerId = 'user-123';
-        $adminId = 'admin-456';
+        $owner = User::factory()->create(['role' => 'regular']);
+        $admin = User::factory()->create(['id' => 'admin-456', 'role' => 'super_admin']);
 
         $ip = IPAddress::create([
-            'user_id' => $ownerId,
+            'user_id' => $owner->id,
             'ip_address' => '192.168.1.1',
             'label' => 'Test Server',
             'type' => 'ipv4',
         ]);
 
-        $this->withHeaders([
-            'X-User-ID' => $adminId,
-            'X-User-Role' => 'super_admin',
-        ])->deleteJson("/api/ip/{$ip->id}");
+        $this->actingAs($admin)->deleteJson("/api/v1/ip/{$ip->id}");
 
         // Check ip_history table
         $this->assertDatabaseHas('ip_history', [
             'ip_address_id' => $ip->id,
-            'modified_by' => $adminId,
+            'modified_by' => $admin->id,
             'action' => 'deleted',
         ]);
 
@@ -120,7 +112,7 @@ class AuditLoggingTest extends TestCase
         $this->assertDatabaseHas('activity_logs', [
             'subject_id' => $ip->id,
             'subject_type' => IPAddress::class,
-            'causer_id' => $adminId,
+            'causer_id' => $admin->id,
             'event' => 'ip.deleted',
         ]);
     }
@@ -130,13 +122,10 @@ class AuditLoggingTest extends TestCase
      */
     public function test_history_is_tracked(): void
     {
-        $userId = 'user-123';
+        $user = User::factory()->create(['role' => 'regular']);
 
         // Create IP
-        $response = $this->withHeaders([
-            'X-User-ID' => $userId,
-            'X-User-Role' => 'regular',
-        ])->postJson('/api/ip', [
+        $response = $this->actingAs($user)->postJson('/api/v1/ip', [
             'ip_address' => '192.168.1.1',
             'label' => 'Initial Label',
             'type' => 'ipv4',
@@ -145,25 +134,16 @@ class AuditLoggingTest extends TestCase
         $ipId = $response->json('data.id');
 
         // Update IP twice
-        $this->withHeaders([
-            'X-User-ID' => $userId,
-            'X-User-Role' => 'regular',
-        ])->putJson("/api/ip/{$ipId}", [
+        $this->actingAs($user)->putJson("/api/v1/ip/{$ipId}", [
             'label' => 'Second Label',
         ]);
 
-        $this->withHeaders([
-            'X-User-ID' => $userId,
-            'X-User-Role' => 'regular',
-        ])->putJson("/api/ip/{$ipId}", [
+        $this->actingAs($user)->putJson("/api/v1/ip/{$ipId}", [
             'label' => 'Third Label',
         ]);
 
         // Get history
-        $historyResponse = $this->withHeaders([
-            'X-User-ID' => $userId,
-            'X-User-Role' => 'regular',
-        ])->getJson("/api/ip/{$ipId}/history");
+        $historyResponse = $this->actingAs($user)->getJson("/api/v1/ip/{$ipId}/history");
 
         $historyResponse->assertStatus(200)
             ->assertJsonCount(3, 'data');
@@ -177,12 +157,9 @@ class AuditLoggingTest extends TestCase
      */
     public function test_activity_log_includes_user_context(): void
     {
-        $userId = 'user-123';
+        $user = User::factory()->create(['role' => 'regular']);
 
-        $response = $this->withHeaders([
-            'X-User-ID' => $userId,
-            'X-User-Role' => 'regular',
-        ])->postJson('/api/ip', [
+        $response = $this->actingAs($user)->postJson('/api/v1/ip', [
             'ip_address' => '192.168.1.1',
             'label' => 'Test Server',
         ]);
@@ -192,7 +169,7 @@ class AuditLoggingTest extends TestCase
         // Check activity log has correct causer
         $this->assertDatabaseHas('activity_logs', [
             'subject_id' => $ipId,
-            'causer_id' => $userId,
+            'causer_id' => $user->id,
             'causer_type' => null, // We only store ID, not type
         ]);
     }
@@ -202,12 +179,9 @@ class AuditLoggingTest extends TestCase
      */
     public function test_activity_log_properties_contain_data(): void
     {
-        $userId = 'user-123';
+        $user = User::factory()->create(['role' => 'regular']);
 
-        $response = $this->withHeaders([
-            'X-User-ID' => $userId,
-            'X-User-Role' => 'regular',
-        ])->postJson('/api/ip', [
+        $response = $this->actingAs($user)->postJson('/api/v1/ip', [
             'ip_address' => '192.168.1.1',
             'label' => 'Test Server',
             'comment' => 'Test comment',

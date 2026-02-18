@@ -36,11 +36,21 @@ class TokenRefreshTest extends TestCase
 
         // Mock Redis for login
         Redis::shouldReceive('setex')->andReturn(true);
-        Redis::shouldReceive('sadd')->andReturn(1);
-        Redis::shouldReceive('expire')->andReturn(true);
-        Redis::shouldReceive('get')->andReturn($user->id);
-        Redis::shouldReceive('del')->andReturn(1);
-        Redis::shouldReceive('srem')->andReturn(1);
+        Redis::shouldReceive('pipeline')->andReturnUsing(function ($callback) {
+            $mockPipe = new class
+            {
+                public function sadd($key, $value)
+                {
+                    return 1;
+                }
+
+                public function expire($key, $ttl)
+                {
+                    return true;
+                }
+            };
+            $callback($mockPipe);
+        });
 
         // Login to get tokens
         $loginResponse = $this->postJson('/api/auth/login', [
@@ -49,6 +59,11 @@ class TokenRefreshTest extends TestCase
         ]);
 
         $refreshToken = $loginResponse->json('data.refresh_token');
+
+        // Mock Redis for refresh - return user ID for validation
+        Redis::shouldReceive('get')->once()->andReturn($user->id);
+        Redis::shouldReceive('del')->andReturn(1);
+        Redis::shouldReceive('srem')->andReturn(1);
 
         // Refresh the token
         $response = $this->postJson('/api/auth/refresh', [], [
@@ -152,8 +167,21 @@ class TokenRefreshTest extends TestCase
 
         // Mock Redis for login
         Redis::shouldReceive('setex')->andReturn(true);
-        Redis::shouldReceive('sadd')->andReturn(1);
-        Redis::shouldReceive('expire')->andReturn(true);
+        Redis::shouldReceive('pipeline')->andReturnUsing(function ($callback) {
+            $mockPipe = new class
+            {
+                public function sadd($key, $value)
+                {
+                    return 1;
+                }
+
+                public function expire($key, $ttl)
+                {
+                    return true;
+                }
+            };
+            $callback($mockPipe);
+        });
 
         // Login to get tokens
         $loginResponse = $this->postJson('/api/auth/login', [

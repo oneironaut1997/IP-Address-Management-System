@@ -6,12 +6,12 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\ResourceCollection;
 
 /**
- * Class UnifiedAuditLogCollection
+ * Class UnifiedActivityLogCollection
  *
- * Transforms a collection of unified audit logs into API response format.
+ * Transforms a collection of unified activity logs into API response format.
  * Includes metadata for pagination and counts by source type.
  */
-class UnifiedAuditLogCollection extends ResourceCollection
+class UnifiedActivityLogCollection extends ResourceCollection
 {
     /**
      * Additional meta data to include in the response.
@@ -38,7 +38,7 @@ class UnifiedAuditLogCollection extends ResourceCollection
     {
         return [
             'success' => true,
-            'data' => UnifiedAuditLogResource::collection($this->collection),
+            'data' => UnifiedActivityLogResource::collection($this->collection),
             'meta' => $this->meta,
         ];
     }

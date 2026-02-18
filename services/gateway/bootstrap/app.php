@@ -12,9 +12,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Register middleware aliases
         $middleware->alias([
-            'jwt' => \App\Http\Middleware\JwtMiddleware::class,
+            'correlation' => \App\Http\Middleware\CorrelationIdMiddleware::class,
         ]);
+
+        // Global middleware stack - correlation ID always runs first
+        $middleware->prependToGroup('api', \App\Http\Middleware\CorrelationIdMiddleware::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

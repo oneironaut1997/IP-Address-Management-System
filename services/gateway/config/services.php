@@ -35,4 +35,21 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Microservices
+    |--------------------------------------------------------------------------
+    |
+    | Backend service URLs for the gateway proxy.
+    |
+    */
+
+    'auth' => [
+        'url' => env('AUTH_SERVICE_URL', 'http://auth-service:8000'),
+    ],
+
+    'ip_management' => [
+        'url' => env('IP_MANAGEMENT_SERVICE_URL', 'http://ip-management:8000'),
+    ],
+
 ];

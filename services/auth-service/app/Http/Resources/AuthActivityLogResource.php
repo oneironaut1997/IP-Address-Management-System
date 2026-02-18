@@ -6,12 +6,13 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * Class AuditLogResource
+ * Class AuthActivityLogResource
  *
  * Transforms AuditLog model data into API response format.
- * Ensures consistent audit log data structure across all API endpoints.
+ * Ensures consistent activity log data structure across all API endpoints.
+ * Specifically handles authentication-related activity logs (login, logout, register).
  */
-class AuditLogResource extends JsonResource
+class AuthActivityLogResource extends JsonResource
 {
     /**
      * Transform the resource into an array.

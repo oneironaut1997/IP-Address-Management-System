@@ -23,7 +23,7 @@ class IPService
      * Get all IP addresses with pagination.
      *
      * Uses pagination to prevent memory issues with large datasets.
-     * Eager loads history relationship for N+1 query prevention.
+     * Uses select() to limit columns fetched for better performance.
      *
      * @param  int  $perPage  Number of items per page (default: 20, max: 100)
      * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
@@ -33,7 +33,7 @@ class IPService
         // Clamp perPage to reasonable bounds
         $perPage = min(max($perPage, 1), 100);
 
-        return IPAddress::with('history')
+        return IPAddress::select(['id', 'user_id', 'ip_address', 'label', 'comment', 'type', 'created_at', 'updated_at'])
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
     }
@@ -65,6 +65,7 @@ class IPService
             ];
         }
 
+        // create() already returns the model with timestamps - no need for fresh()
         $ipAddress = IPAddress::create([
             'user_id' => $userId,
             'ip_address' => $data['ip_address'],
@@ -107,13 +108,16 @@ class IPService
      */
     public function getIPAddressById(string $id): ?IPAddress
     {
-        return IPAddress::with('history')->find($id);
+        return IPAddress::select(['id', 'user_id', 'ip_address', 'label', 'comment', 'type', 'created_at', 'updated_at', 'deleted_at'])
+            ->with('history')
+            ->find($id);
     }
 
     /**
      * Update an IP address.
      *
      * Tracks changes in both history table and activity log.
+     * OPTIMIZED: Uses fresh() only once after update.
      *
      * @param  IPAddress  $ipAddress  The IP address to update
      * @param  array  $data  Validated update data
@@ -127,22 +131,26 @@ class IPService
 
         $ipAddress->update($data);
 
+        // Get fresh instance ONCE for all operations
+        $freshIpAddress = $ipAddress->fresh();
+        $newValues = $freshIpAddress->toArray();
+
         // Log the update in history table
         IPHistory::create([
             'ip_address_id' => $ipAddress->id,
             'modified_by' => $userId,
             'old_values' => $oldValues,
-            'new_values' => $ipAddress->fresh()->toArray(),
+            'new_values' => $newValues,
             'action' => 'updated',
         ]);
 
         // Log activity using Spatie Activity Log
         activity()
-            ->performedOn($ipAddress)
+            ->performedOn($freshIpAddress)
             ->event('ip.updated')
             ->withProperties([
                 'old' => $oldValues,
-                'new' => $ipAddress->fresh()->toArray(),
+                'new' => $newValues,
                 'causer_id' => $userId,
             ])
             ->tap(function ($activity) use ($userId) {
@@ -151,7 +159,7 @@ class IPService
             })
             ->log('ip.updated');
 
-        return $ipAddress->fresh();
+        return $freshIpAddress;
     }
 
     /**

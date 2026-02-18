@@ -2,8 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreIPProxyRequest;
-use App\Http\Requests\UpdateIPProxyRequest;
 use App\Services\IPProxyService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -47,9 +45,9 @@ class IPProxyController extends Controller
     /**
      * Store a newly created IP address.
      *
-     * @param  StoreIPProxyRequest  $request  Validated store request
+     * @param  Request  $request  The HTTP request
      */
-    public function store(StoreIPProxyRequest $request): JsonResponse
+    public function store(Request $request): JsonResponse
     {
         $response = $this->ipProxyService->createIPAddress($request);
 
@@ -78,10 +76,10 @@ class IPProxyController extends Controller
     /**
      * Update the specified IP address.
      *
-     * @param  UpdateIPProxyRequest  $request  Validated update request
+     * @param  Request  $request  The HTTP request
      * @param  string  $id  The IP address ID
      */
-    public function update(UpdateIPProxyRequest $request, string $id): JsonResponse
+    public function update(Request $request, string $id): JsonResponse
     {
         $response = $this->ipProxyService->updateIPAddress($id, $request);
 

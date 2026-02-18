@@ -8,8 +8,14 @@ use Illuminate\Support\Facades\Route;
  * API Routes - Gateway Service
  *
  * This file defines the API routes for the gateway service.
+ *
  * Public routes (no authentication) are defined first,
  * followed by protected routes that require JWT validation.
+ *
+ * Rate Limiting:
+ * - Public endpoints: 10 requests per minute
+ * - Auth endpoints: 5 requests per minute (prevent brute force)
+ * - Protected endpoints: 60 requests per minute
  */
 
 /*
@@ -19,12 +25,18 @@ use Illuminate\Support\Facades\Route;
 |
 | These routes are accessible without authentication. They handle
 | user registration, login, and token refresh operations.
+| Rate limited to prevent abuse.
 |
 */
 
-Route::post('auth/login', [AuthProxyController::class, 'login']);
-Route::post('auth/register', [AuthProxyController::class, 'register']);
-Route::post('auth/refresh', [AuthProxyController::class, 'refresh']);
+Route::prefix('auth')->middleware('throttle:5,1')->group(function () {
+    Route::post('login', [AuthProxyController::class, 'login']);
+    Route::post('register', [AuthProxyController::class, 'register']);
+});
+
+// Refresh token has its own limit
+Route::post('auth/refresh', [AuthProxyController::class, 'refresh'])
+    ->middleware('throttle:10,1');
 
 /*
 |--------------------------------------------------------------------------
@@ -37,7 +49,7 @@ Route::post('auth/refresh', [AuthProxyController::class, 'refresh']);
 |
 */
 
-Route::middleware('jwt')->group(function () {
+Route::middleware(['throttle:60,1'])->group(function () {
     // Authentication routes that require valid token
     Route::post('auth/logout', [AuthProxyController::class, 'logout']);
     Route::get('auth/me', [AuthProxyController::class, 'me']);
@@ -54,9 +66,6 @@ Route::middleware('jwt')->group(function () {
     Route::delete('ip/{id}', [IPProxyController::class, 'destroy']);
     Route::get('ip/{id}/history', [IPProxyController::class, 'history']);
     Route::get('ip/{id}/audit', [IPProxyController::class, 'audit']);
-    // Wildcard route for nested resources (e.g., /api/ip/{id}/history/filter)
-    Route::match(['get', 'post', 'put', 'patch', 'delete'], 'ip/{path}', [IPProxyController::class, 'handle'])
-        ->where('path', '.*');
 });
 
 /*
@@ -75,6 +84,7 @@ Route::get('/health', function () {
             'service' => 'gateway',
             'status' => 'healthy',
             'timestamp' => now()->toIso8601String(),
+            'version' => 'v1',
         ],
     ]);
 });

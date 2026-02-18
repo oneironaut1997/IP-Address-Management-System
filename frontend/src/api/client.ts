@@ -2,13 +2,22 @@
  * API Client
  *
  * Axios instance with authentication interceptors for handling JWT tokens
- * and automatic token refresh on 401 responses.
+ * via httpOnly cookies and automatic token refresh on 401 responses.
+ *
+ * SECURITY: Tokens are stored in httpOnly cookies (set by the backend)
+ * instead of localStorage to prevent XSS attacks. The browser automatically
+ * sends cookies with each request when using credentials: 'include'.
  *
  * @package API
  */
 
 import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios'
 import type { AuthResponse, APIResponse } from '@/types'
+
+/**
+ * API Version - used for all requests
+ */
+const API_VERSION = 'v1'
 
 /**
  * Extended Axios request configuration with retry flag
@@ -29,10 +38,17 @@ const REQUEST_TIMEOUT = 10000
 
 /**
  * Axios instance with default configuration
+ *
+ * IMPORTANT: credentials: 'include' is required for cookies to be sent
+ * with cross-origin requests. This is safe because:
+ * 1. Tokens are stored in httpOnly cookies (not accessible to JS)
+ * 2. The SameSite=Lax attribute prevents CSRF attacks
+ * 3. The Secure flag is set in production (HTTPS only)
  */
 const api = axios.create({
   baseURL,
   timeout: REQUEST_TIMEOUT,
+  withCredentials: true, // Required for sending cookies with requests
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -42,14 +58,18 @@ const api = axios.create({
 /**
  * Request Interceptor
  *
- * Adds the Authorization header with the access token from localStorage
- * to every outgoing request.
+ * Adds the API version prefix to all URLs and handles tokens via httpOnly cookies.
  */
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem('access_token')
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`
+    // Add API version prefix to URL
+    if (config.url && !config.url.startsWith('/')) {
+      config.url = `/${config.url}`
+    }
+    if (config.url && !config.url.startsWith(`/${API_VERSION}/`) && config.url !== '/health') {
+      // Only add version if not already present and not health check
+      const prefix = config.url.startsWith('/') ? '' : '/'
+      config.url = `${prefix}${API_VERSION}${config.url}`
     }
     return config
   },
@@ -63,6 +83,10 @@ api.interceptors.request.use(
  *
  * Handles 401 responses by attempting to refresh the token.
  * If refresh fails, redirects to login page.
+ *
+ * Note: Since tokens are in httpOnly cookies, we can't directly
+ * access them. However, the refresh endpoint accepts the refresh_token
+ * cookie automatically.
  */
 api.interceptors.response.use(
   (response) => response,
@@ -79,48 +103,28 @@ api.interceptors.response.use(
       originalRequest._retry = true
 
       try {
-        const refreshToken = localStorage.getItem('refresh_token')
-
-        if (!refreshToken) {
-          throw new Error('No refresh token available')
-        }
-
         // Attempt to refresh the token
+        // The refresh token cookie is automatically included
         const response = await axios.post<APIResponse<AuthResponse>>(
           `${baseURL}/auth/refresh`,
           {},
           {
-            headers: {
-              Authorization: `Bearer ${refreshToken}`,
-            },
+            withCredentials: true, // Important: required for cookie transmission
           }
         )
 
-        const tokenData = response.data.data
-        if (!tokenData) {
-          throw new Error('No token data in refresh response')
+        // Tokens are now in httpOnly cookies, so we don't need to
+        // store them in localStorage. The browser handles it.
+        if (!response.data.success) {
+          throw new Error('Token refresh failed')
         }
 
-        const { access_token, refresh_token } = tokenData
-
-        // Store new tokens
-        localStorage.setItem('access_token', access_token)
-        localStorage.setItem('refresh_token', refresh_token)
-
-        // Update the original request with the new token
-        originalRequest.headers.Authorization = `Bearer ${access_token}`
-
         // Retry the original request
+        // Cookies will be automatically included
         return api(originalRequest)
       } catch (refreshError) {
-        // Token refresh failed, clear storage and redirect to login
-        localStorage.removeItem('access_token')
-        localStorage.removeItem('refresh_token')
-        localStorage.removeItem('user')
-
-        // Redirect to login page
-        // window.location.href = '/login'
-
+        // Token refresh failed, redirect to login
+        window.location.href = '/login'
         return Promise.reject(refreshError)
       }
     }
@@ -130,41 +134,21 @@ api.interceptors.response.use(
 )
 
 /**
- * Set authentication tokens in localStorage
- *
- * @param accessToken - JWT access token
- * @param refreshToken - JWT refresh token
- */
-export function setAuthTokens(accessToken: string, refreshToken: string): void {
-  localStorage.setItem('access_token', accessToken)
-  localStorage.setItem('refresh_token', refreshToken)
-}
-
-/**
- * Clear authentication tokens from localStorage
- */
-export function clearAuthTokens(): void {
-  localStorage.removeItem('access_token')
-  localStorage.removeItem('refresh_token')
-  localStorage.removeItem('user')
-}
-
-/**
- * Get the current access token
- *
- * @returns The access token or null
- */
-export function getAccessToken(): string | null {
-  return localStorage.getItem('access_token')
-}
-
-/**
  * Check if user is authenticated
  *
- * @returns True if access token exists
+ * This function attempts to check authentication status by
+ * making a request to the /me endpoint. If it succeeds,
+ * the user is authenticated.
+ *
+ * @returns Promise<boolean>
  */
-export function isAuthenticated(): boolean {
-  return !!getAccessToken()
+export async function isAuthenticated(): Promise<boolean> {
+  try {
+    await api.get('/auth/me')
+    return true
+  } catch {
+    return false
+  }
 }
 
 export default api

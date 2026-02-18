@@ -1,10 +1,10 @@
 /**
- * Audit Store
+ * Activity Store
  *
- * Pinia store for managing audit log state and operations.
+ * Pinia store for managing activity log state and operations.
  * Uses the Composition API (setup stores) pattern.
  *
- * Supports unified audit logs from both auth-service (login/logout)
+ * Supports unified activity logs from both auth-service (login/logout)
  * and ip-management (ip.created, ip.updated, ip.deleted).
  *
  * @package Stores
@@ -16,14 +16,14 @@ import api from '@/api/client'
 import type { AuditLog, APIResponse, AuditLogType } from '@/types'
 
 /**
- * Audit Store
+ * Activity Store
  *
- * Manages audit log state including:
- * - List of all audit logs (auth + IP activities)
+ * Manages activity log state including:
+ * - List of all activity logs (auth + IP activities)
  * - Loading and error states
  * - Filtering capabilities by type and event
  */
-export const useAuditStore = defineStore('audit', () => {
+export const useActivityStore = defineStore('activity', () => {
   // State
   const logs = ref<AuditLog[]>([])
   const loading = ref(false)
@@ -75,7 +75,7 @@ export const useAuditStore = defineStore('audit', () => {
   // Actions
 
   /**
-   * Fetch all audit logs (both auth and IP activities)
+   * Fetch all activity logs (both auth and IP activities)
    *
    * @param type - Filter by type: 'auth', 'ip', or 'all' (default: 'all')
    * @throws Error on fetch failure
@@ -94,7 +94,7 @@ export const useAuditStore = defineStore('audit', () => {
         meta.value = data.meta as unknown as typeof meta.value
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to fetch audit logs'
+      const message = err instanceof Error ? err.message : 'Failed to fetch activity logs'
       error.value = message
       throw new Error(message)
     } finally {

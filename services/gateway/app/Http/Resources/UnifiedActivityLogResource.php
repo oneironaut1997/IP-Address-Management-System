@@ -6,12 +6,12 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * Class UnifiedAuditLogResource
+ * Class UnifiedActivityLogResource
  *
- * Transforms unified audit log data into a consistent API format.
+ * Transforms unified activity log data into a consistent API format.
  * Combines auth-service and ip-management activity logs.
  */
-class UnifiedAuditLogResource extends JsonResource
+class UnifiedActivityLogResource extends JsonResource
 {
     /**
      * Transform the resource into an array.

@@ -1,45 +1,76 @@
 <?php
 
-use App\Http\Controllers\AuditController;
+use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
+| API Routes - Auth Service
 |
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "api" middleware group. Make something great!
+| All routes follow RESTful conventions.
+|
+| Public routes (no authentication) are defined first,
+| followed by protected routes that require JWT validation.
+|
+| Rate Limiting:
+| - Auth endpoints: 5 requests per minute (prevent brute force)
 |
 */
 
-Route::group(['prefix' => 'auth'], function () {
-    // Public routes
+/*
+|--------------------------------------------------------------------------
+| Auth Routes
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('auth')->middleware('throttle:5,1')->group(function () {
     Route::post('register', [AuthController::class, 'register']);
     Route::post('login', [AuthController::class, 'login']);
     Route::post('refresh', [AuthController::class, 'refresh']);
-
-    // Protected routes
-    Route::group(['middleware' => 'auth:api'], function () {
-        Route::post('logout', [AuthController::class, 'logout']);
-        Route::get('me', [AuthController::class, 'me']);
-    });
 });
 
 /*
 |--------------------------------------------------------------------------
-| Audit Log Routes
+| Protected Routes (JWT Required)
 |--------------------------------------------------------------------------
 |
-| Routes for retrieving audit logs. These require authentication and
-| are typically accessed by admin users for compliance purposes.
+| These routes require a valid JWT token.
 |
 */
 
-Route::group(['prefix' => 'audit', 'middleware' => 'auth:api'], function () {
-    Route::get('logs', [AuditController::class, 'index']);
-    Route::get('logs/{id}', [AuditController::class, 'show']);
-    Route::get('event-types', [AuditController::class, 'eventTypes']);
+Route::prefix('auth')->middleware('auth:api')->group(function () {
+    Route::post('logout', [AuthController::class, 'logout']);
+    Route::get('me', [AuthController::class, 'me']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Activity Log Routes
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('activity')->middleware('auth:api')->group(function () {
+    Route::get('logs', [ActivityLogController::class, 'index']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Health Check Route
+|--------------------------------------------------------------------------
+|
+| Simple health check endpoint for monitoring.
+|
+*/
+
+Route::get('/health', function () {
+    return response()->json([
+        'success' => true,
+        'data' => [
+            'service' => 'auth-service',
+            'status' => 'healthy',
+            'timestamp' => now()->toIso8601String(),
+            'version' => 'v1',
+        ],
+    ]);
 });

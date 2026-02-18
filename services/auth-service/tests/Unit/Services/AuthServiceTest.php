@@ -126,9 +126,20 @@ class AuthServiceTest extends TestCase
             ->with("user:{$user->id}:refresh_tokens")
             ->andReturn(['test-jti']);
 
-        Redis::shouldReceive('del')
-            ->with('refresh:test-jti')
-            ->andReturn(1);
+        // Mock pipeline for batch delete operations
+        Redis::shouldReceive('pipeline')
+            ->once()
+            ->andReturnUsing(function ($callback) {
+                // Create a mock pipe that executes callbacks
+                $mockPipe = new class
+                {
+                    public function del($key)
+                    {
+                        return 1;
+                    }
+                };
+                $callback($mockPipe);
+            });
 
         Redis::shouldReceive('del')
             ->with("user:{$user->id}:refresh_tokens")

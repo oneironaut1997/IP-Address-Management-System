@@ -35,7 +35,7 @@ const navigation = computed(() => [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, current: route.path === '/dashboard' },
   { name: 'IP Addresses', href: '/ip', icon: Network, current: route.path.startsWith('/ip') },
   ...(authStore.isSuperAdmin
-    ? [{ name: 'Audit Logs', href: '/audit', icon: ScrollText, current: route.path === '/audit' }]
+    ? [{ name: 'Activity Logs', href: '/activity', icon: ScrollText, current: route.path === '/activity' }]
     : []),
 ])
 

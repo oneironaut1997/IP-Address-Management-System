@@ -4,13 +4,17 @@
  * Pinia store for managing authentication state and operations.
  * Uses the Composition API (setup stores) pattern.
  *
+ * SECURITY: This store uses httpOnly cookies for token storage.
+ * User data is fetched from the server on each request to ensure
+ * data consistency and security.
+ *
  * @package Stores
  */
 
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
-import axios, { AxiosError } from 'axios'
-import api, { setAuthTokens, clearAuthTokens } from '@/api/client'
+import axios from 'axios'
+import api from '@/api/client'
 import type { User, LoginCredentials, RegistrationData, AuthResponse, APIResponse, APIError } from '@/types'
 
 /**
@@ -62,9 +66,13 @@ function extractErrorMessage(err: unknown, defaultMessage: string): string {
  * - Authentication status
  * - Role-based permissions
  * - Login/logout operations
+ *
+ * NOTE: Tokens are handled via httpOnly cookies.
+ * User data is fetched from the server on each request.
+ * No localStorage is used for security reasons.
  */
 export const useAuthStore = defineStore('auth', () => {
-  // State
+  // State - only in memory, never persisted
   const user = ref<User | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
@@ -86,16 +94,14 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
 
     try {
+      // Post to login endpoint - cookies will be set by the backend
       const { data } = await api.post<APIResponse<AuthResponse>>('/auth/login', credentials)
 
-      if (!data.data) {
-        throw new Error('No authentication data received')
+      if (!data.success) {
+        throw new Error(data.error?.message || 'Login failed')
       }
 
-      // Store tokens
-      setAuthTokens(data.data.access_token, data.data.refresh_token)
-
-      // Fetch user info
+      // Fetch user info after successful login
       await fetchUser()
     } catch (err: unknown) {
       const message = extractErrorMessage(err, 'Login failed. Please try again.')
@@ -140,9 +146,8 @@ export const useAuthStore = defineStore('auth', () => {
         throw new Error('No user data received')
       }
       
+      // User data is kept only in memory for security
       user.value = data.data.user
-      // Persist user to localStorage for persistence across reloads
-      localStorage.setItem('user', JSON.stringify(data.data.user))
     } catch (err: unknown) {
       user.value = null
       throw err
@@ -153,6 +158,7 @@ export const useAuthStore = defineStore('auth', () => {
    * Logout the current user
    *
    * Calls the logout endpoint and clears local state.
+   * The backend will clear the httpOnly cookies.
    */
   async function logout(): Promise<void> {
     try {
@@ -170,27 +176,47 @@ export const useAuthStore = defineStore('auth', () => {
   /**
    * Clear authentication state
    *
-   * Removes user data and tokens from memory and storage.
+   * Removes user data from memory only.
+   * Note: Token cookies are cleared by the backend.
    */
   function clearAuthState(): void {
     user.value = null
-    clearAuthTokens()
-    localStorage.removeItem('user')
+    // No localStorage to clear - user data not persisted
   }
 
   /**
-   * Initialize auth state from localStorage
+   * Initialize auth state
    *
-   * Attempts to restore the session on app startup.
+   * Attempts to verify session with server on app startup.
+   * This ensures the session is valid before allowing access.
+   *
+   * @returns Promise<boolean>
    */
-  function initializeAuth(): void {
-    const storedUser = localStorage.getItem('user')
-    if (storedUser) {
-      try {
-        user.value = JSON.parse(storedUser) as User
-      } catch {
-        clearAuthState()
-      }
+  async function initializeAuth(): Promise<boolean> {
+    try {
+      await fetchUser()
+      return true
+    } catch {
+      clearAuthState()
+      return false
+    }
+  }
+
+  /**
+   * Verify authentication status with the server
+   *
+   * Use this to verify the session is still valid
+   * after page reload or when coming back from idle.
+   *
+   * @returns Promise<boolean>
+   */
+  async function verifyAuth(): Promise<boolean> {
+    try {
+      await fetchUser()
+      return true
+    } catch {
+      clearAuthState()
+      return false
     }
   }
 
@@ -209,5 +235,6 @@ export const useAuthStore = defineStore('auth', () => {
     fetchUser,
     initializeAuth,
     clearAuthState,
+    verifyAuth,
   }
 })

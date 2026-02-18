@@ -162,7 +162,7 @@ onMounted(() => {
 
         <router-link
           v-if="authStore.isSuperAdmin"
-          to="/audit"
+          to="/activity"
           class="group rounded-xl border bg-rose-50/50 p-6 hover:border-rose-200 hover:shadow-sm transition-all"
         >
           <div class="flex items-start gap-4">
@@ -170,8 +170,8 @@ onMounted(() => {
               <ScrollText class="w-5 h-5 text-rose-500" />
             </div>
             <div>
-              <h3 class="font-semibold text-rose-700">Audit Logs</h3>
-              <p class="text-sm text-rose-600/70 mt-1">View system audit trail</p>
+              <h3 class="font-semibold text-rose-700">Activity Logs</h3>
+              <p class="text-sm text-rose-600/70 mt-1">View system activity trail</p>
             </div>
           </div>
         </router-link>
