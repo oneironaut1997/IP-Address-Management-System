@@ -9,6 +9,7 @@
  */
 
 import { reactive, computed, watch } from 'vue'
+import { useToast } from 'vue-toastification'
 import { useAuthStore } from '@/stores/auth'
 import { useIPStore } from '@/stores/ip'
 import type { IPAddress } from '@/types'
@@ -40,6 +41,7 @@ const emit = defineEmits<Emits>()
 
 const authStore = useAuthStore()
 const ipStore = useIPStore()
+const toast = useToast()
 
 const isOwner = computed(() => {
   if (!props.ip || !authStore.user) return false
@@ -104,10 +106,12 @@ async function handleSubmit(): Promise<void> {
       comment: form.comment?.trim() || undefined,
     })
 
+    toast.success('IP address updated successfully')
+
     emit('updated')
     emit('close')
   } catch {
-    // Error is handled by the store
+    toast.error('Failed to update IP address')
   }
 }
 </script>

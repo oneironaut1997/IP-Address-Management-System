@@ -10,6 +10,7 @@
  */
 
 import { ref, onMounted, watch } from 'vue'
+import { useToast } from 'vue-toastification'
 import { useIPStore } from '@/stores/ip'
 import AddIPForm from '@/components/forms/AddIPForm.vue'
 import EditIPForm from '@/components/forms/EditIPForm.vue'
@@ -30,6 +31,7 @@ import {
 import { cn } from '@/lib/utils'
 
 const ipStore = useIPStore()
+const toast = useToast()
 
 const showAddModal = ref(false)
 const showEditModal = ref(false)
@@ -64,10 +66,11 @@ async function handleDelete(): Promise<void> {
 
   try {
     await ipStore.deleteIP(ipToDelete.value.id)
+    toast.success('IP address deleted successfully')
     showDeleteModal.value = false
     ipToDelete.value = null
   } catch {
-    // Error is handled by store
+    toast.error('Failed to delete IP address')
   }
 }
 
