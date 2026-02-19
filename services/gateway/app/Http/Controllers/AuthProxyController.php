@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Resources\UnifiedActivityLogCollection;
 use App\Services\AuthProxyService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -145,7 +144,7 @@ class AuthProxyController extends Controller
         $result = $this->authProxyService->getUnifiedAuditLogs($request);
 
         return response()->json(
-            new UnifiedActivityLogCollection($result['data'], $result['meta'])
+            $result
         );
     }
 

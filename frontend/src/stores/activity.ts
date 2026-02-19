@@ -58,18 +58,23 @@ export const useActivityStore = defineStore('activity', () => {
     }
 
     // Filter by event type
-    if (eventFilter.value) {
-      result = result.filter((log) =>
-        log.event_type.toLowerCase().includes(eventFilter.value.toLowerCase())
-      )
-    }
+     if (eventFilter.value) {
+       result = result.filter((log) =>
+         log.event_type && typeof log.event_type === 'string' && 
+         log.event_type.toLowerCase().includes(eventFilter.value.toLowerCase())
+       )
+     }
 
     return result
   })
 
   const eventTypes = computed(() => {
     const types = new Set<string>()
-    getLogsArray().forEach((log) => types.add(log.event_type))
+    getLogsArray().forEach((log) => {
+      if (log.event_type && typeof log.event_type === 'string') {
+        types.add(log.event_type)
+      }
+    })
     return Array.from(types).sort()
   })
 

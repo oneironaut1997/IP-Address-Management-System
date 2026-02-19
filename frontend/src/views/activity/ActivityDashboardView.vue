@@ -37,16 +37,20 @@ const selectedFilter = ref('')
 const selectedTypeFilter = ref<AuditLogType>('all')
 const selectedLog = ref<AuditLog | null>(null)
 
-function formatEventType(eventType: string | undefined): string {
-  if (!eventType) return 'Unknown'
+function formatEventType(eventType: string | undefined | null): string {
+  if (!eventType || typeof eventType !== 'string') {
+    return 'Unknown Event'
+  }
   return eventType
     .split('.')
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ')
 }
 
-function getEventColor(eventType: string | undefined): string {
-  if (!eventType) return 'bg-gray-100 text-gray-700'
+function getEventColor(eventType: string | undefined | null): string {
+  if (!eventType || typeof eventType !== 'string') {
+    return 'bg-gray-100 text-gray-700'
+  }
   if (eventType.includes('login')) return 'bg-emerald-100 text-emerald-700'
   if (eventType.includes('logout')) return 'bg-amber-100 text-amber-700'
   if (eventType.includes('created')) return 'bg-blue-100 text-blue-700'
@@ -55,8 +59,15 @@ function getEventColor(eventType: string | undefined): string {
   return 'bg-gray-100 text-gray-700'
 }
 
-function formatFullDate(dateString: string): string {
-  return new Date(dateString).toLocaleString('en-US', {
+function formatFullDate(dateString: string | undefined | null): string {
+  if (!dateString || typeof dateString !== 'string') {
+    return 'Invalid Date'
+  }
+  const date = new Date(dateString)
+  if (isNaN(date.getTime())) {
+    return 'Invalid Date'
+  }
+  return date.toLocaleString('en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -207,9 +218,8 @@ onMounted(() => {
       <!-- Activity Table -->
       <ActivityTable
         v-else
-        :items="activityStore.filteredLogs"
-        :loading="activityStore.loading"
-        @view-details="showDetails"
+        :logs="activityStore.filteredLogs"
+        @view="showDetails"
       />
 
       <!-- Stats Summary -->
@@ -290,7 +300,7 @@ onMounted(() => {
               <Code class="w-4 h-4" />
               <span class="text-xs font-medium uppercase">Session ID</span>
             </div>
-            <p class="font-mono text-sm break-all">{{ selectedLog.session_id }}</p>
+            <p class="font-mono text-sm break-all">{{ selectedLog.session_id ?? '--' }}</p>
           </div>
 
           <!-- Metadata -->

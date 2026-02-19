@@ -111,17 +111,17 @@ export interface AuditLog {
   /** Type of log: 'auth' for authentication events, 'ip' for IP management events */
   type?: AuditLogType
   /** UUID of the user who performed the action */
-  user_id: string
+  user_id?: string
   /** Type of event (e.g., 'login', 'ip.created', 'ip.updated') */
-  event_type: string
+  event_type?: string
   /** Type of entity affected (e.g., 'User', 'IPAddress') */
-  entity_type: string
+  entity_type?: string
   /** UUID of the entity affected */
-  entity_id: string
+  entity_id?: string
   /** Additional metadata about the event */
-  metadata: Record<string, unknown>
+  metadata?: Record<string, unknown>
   /** Session identifier for tracking */
-  session_id: string
+  session_id?: string
   /** Timestamp when the event occurred */
   created_at: string
 }

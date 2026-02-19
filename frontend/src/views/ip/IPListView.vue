@@ -9,23 +9,21 @@
  */
 
 import { ref, onMounted } from 'vue'
-import { useAuthStore } from '@/stores/auth'
 import { useIPStore } from '@/stores/ip'
-import IPTable from '@/components/tables/IPTable.vue'
 import AddIPForm from '@/components/forms/AddIPForm.vue'
 import EditIPForm from '@/components/forms/EditIPForm.vue'
+import IPTable from '@/components/tables/IPTable.vue'
 import type { IPAddress } from '@/types'
 import {
   Plus,
-  Trash2,
   Loader2,
   Globe,
   Server,
   AlertTriangle,
   X,
+  Trash2,
 } from 'lucide-vue-next'
 
-const authStore = useAuthStore()
 const ipStore = useIPStore()
 
 const showAddModal = ref(false)
@@ -152,10 +150,7 @@ onMounted(() => {
     <!-- IP Table -->
     <IPTable
       v-else
-      :items="ipStore.ips"
-      :loading="ipStore.loading"
-      :current-user-id="authStore.user?.id"
-      :is-super-admin="authStore.isSuperAdmin"
+      :ips="ipStore.ips"
       @edit="openEditModal"
       @delete="confirmDelete"
     />
