@@ -122,6 +122,17 @@ class ActivityLogService
         if (! empty($filters['to'])) {
             $query->where('created_at', '<=', $filters['to']);
         }
+
+        // Search in event, description, and subject_id
+        if (! empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where(function ($q) use ($search) {
+                $q->where('event', 'LIKE', "%{$search}%")
+                    ->orWhere('description', 'LIKE', "%{$search}%")
+                    ->orWhere('subject_id', 'LIKE', "%{$search}%")
+                    ->orWhere('causer_id', 'LIKE', "%{$search}%");
+            });
+        }
     }
 
     /**
@@ -132,7 +143,7 @@ class ActivityLogService
      */
     public function buildFilters(array $input): array
     {
-        $allowedFilters = ['event', 'event_type', 'user_id', 'subject_type', 'entity_type', 'subject_id', 'from', 'to'];
+        $allowedFilters = ['event', 'event_type', 'user_id', 'subject_type', 'entity_type', 'subject_id', 'from', 'to', 'search'];
         $filters = [];
 
         foreach ($allowedFilters as $filter) {

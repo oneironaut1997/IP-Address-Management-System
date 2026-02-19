@@ -2,17 +2,19 @@
 /**
  * IP List View
  *
- * Displays a table of all IP addresses with actions for viewing,
+ * Displays a paginated table of all IP addresses with actions for viewing,
  * editing (if owner/admin), and deleting (admin only).
+ * Includes search and filter functionality (backend-side).
  *
  * @package Views/IP
  */
 
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useIPStore } from '@/stores/ip'
 import AddIPForm from '@/components/forms/AddIPForm.vue'
 import EditIPForm from '@/components/forms/EditIPForm.vue'
 import IPTable from '@/components/tables/IPTable.vue'
+import PaginationControls from '@/components/common/PaginationControls.vue'
 import type { IPAddress } from '@/types'
 import {
   Plus,
@@ -22,7 +24,10 @@ import {
   AlertTriangle,
   X,
   Trash2,
+  Search,
+  RefreshCw,
 } from 'lucide-vue-next'
+import { cn } from '@/lib/utils'
 
 const ipStore = useIPStore()
 
@@ -31,6 +36,10 @@ const showEditModal = ref(false)
 const showDeleteModal = ref(false)
 const selectedIP = ref<IPAddress | null>(null)
 const ipToDelete = ref<IPAddress | null>(null)
+
+// Local filter state for debounced search
+const localSearchQuery = ref('')
+let searchTimeout: ReturnType<typeof setTimeout> | null = null
 
 function openEditModal(ip: IPAddress): void {
   selectedIP.value = ip
@@ -61,6 +70,59 @@ async function handleDelete(): Promise<void> {
     // Error is handled by store
   }
 }
+
+/**
+ * Handle page change from pagination component
+ */
+function handlePageChange(page: number): void {
+  ipStore.goToPage(page)
+}
+
+/**
+ * Handle page size change from pagination component
+ */
+function handlePageSizeChange(pageSize: number): void {
+  ipStore.changePageSize(pageSize)
+}
+
+/**
+ * Handle search input with debounce
+ */
+function handleSearchInput(): void {
+  if (searchTimeout) {
+    clearTimeout(searchTimeout)
+  }
+  searchTimeout = setTimeout(() => {
+    ipStore.setSearch(localSearchQuery.value)
+  }, 300)
+}
+
+/**
+ * Handle type filter change
+ */
+async function handleTypeFilterChange(): Promise<void> {
+  await ipStore.setTypeFilter(ipStore.typeFilter)
+}
+
+/**
+ * Clear all filters
+ */
+async function clearFilters(): Promise<void> {
+  localSearchQuery.value = ''
+  await ipStore.clearFilters()
+}
+
+/**
+ * Refresh IP list
+ */
+async function refreshIPs(): Promise<void> {
+  await ipStore.refresh()
+}
+
+// Watch for type filter changes
+watch(() => ipStore.typeFilter, () => {
+  handleTypeFilterChange()
+})
 
 onMounted(() => {
   ipStore.fetchIPs()
@@ -103,8 +165,8 @@ onMounted(() => {
             <Globe class="w-5 h-5 text-emerald-500" />
           </div>
           <div>
-            <p class="text-2xl font-bold">{{ ipStore.ipv4Addresses.length }}</p>
-            <p class="text-sm text-muted-foreground">IPv4</p>
+            <p class="text-2xl font-bold">{{ ipStore.pagination.ipv4_count }}</p>
+            <p class="text-sm text-muted-foreground">IPv4 Addresses</p>
           </div>
         </div>
       </div>
@@ -114,11 +176,65 @@ onMounted(() => {
             <Server class="w-5 h-5 text-blue-500" />
           </div>
           <div>
-            <p class="text-2xl font-bold">{{ ipStore.ipv6Addresses.length }}</p>
-            <p class="text-sm text-muted-foreground">IPv6</p>
+            <p class="text-2xl font-bold">{{ ipStore.pagination.ipv6_count }}</p>
+            <p class="text-sm text-muted-foreground">IPv6 Addresses</p>
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="flex flex-wrap items-end gap-4 p-4 rounded-xl border bg-card">
+      <!-- Search Input -->
+      <div class="flex-1 min-w-[200px]">
+        <label class="text-sm font-medium mb-2 block">Search</label>
+        <div class="relative">
+          <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            v-model="localSearchQuery"
+            type="text"
+            placeholder="Search IP, label, or comment..."
+            class="w-full rounded-lg border bg-background pl-9 pr-4 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            @input="handleSearchInput"
+          />
+        </div>
+      </div>
+
+      <!-- Type Filter -->
+      <div class="min-w-[150px]">
+        <label class="text-sm font-medium mb-2 block">IP Type</label>
+        <div class="relative">
+          <Server class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <select
+            v-model="ipStore.typeFilter"
+            class="w-full rounded-lg border bg-background pl-9 pr-4 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <option value="">All Types</option>
+            <option value="ipv4">IPv4</option>
+            <option value="ipv6">IPv6</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Clear Filters Button -->
+      <button
+        v-if="ipStore.hasActiveFilters"
+        class="inline-flex items-center justify-center gap-2 rounded-lg border bg-background px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
+        @click="clearFilters"
+      >
+        <X class="w-4 h-4" />
+        Clear
+      </button>
+
+      <!-- Refresh Button -->
+      <button
+        class="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+        :disabled="ipStore.loading"
+        @click="refreshIPs"
+      >
+        <RefreshCw :class="cn('w-4 h-4', ipStore.loading && 'animate-spin')" />
+        {{ ipStore.loading ? 'Refreshing...' : 'Refresh' }}
+      </button>
     </div>
 
     <!-- Loading State -->
@@ -136,24 +252,45 @@ onMounted(() => {
       class="flex flex-col items-center justify-center py-12 rounded-xl border bg-card"
     >
       <Globe class="w-12 h-12 text-muted-foreground/50 mb-4" />
-      <h3 class="text-lg font-medium mb-1">No IP Addresses</h3>
-      <p class="text-muted-foreground text-sm mb-4">Get started by adding your first IP address</p>
+      <h3 class="text-lg font-medium mb-1">No IP Addresses Found</h3>
+      <p class="text-muted-foreground text-sm mb-4">
+        {{ ipStore.hasActiveFilters ? 'Try adjusting your search or filters' : 'Get started by adding your first IP address' }}
+      </p>
       <button
+        v-if="!ipStore.hasActiveFilters"
         class="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
         @click="showAddModal = true"
       >
         <Plus class="w-4 h-4" />
         Add IP Address
       </button>
+      <button
+        v-else
+        class="inline-flex items-center justify-center gap-2 rounded-lg border bg-background px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
+        @click="clearFilters"
+      >
+        <X class="w-4 h-4" />
+        Clear Filters
+      </button>
     </div>
 
-    <!-- IP Table -->
-    <IPTable
-      v-else
-      :ips="ipStore.ips"
-      @edit="openEditModal"
-      @delete="confirmDelete"
-    />
+    <!-- IP Table with Pagination -->
+    <template v-else>
+      <IPTable
+        :ips="ipStore.ips"
+        @edit="openEditModal"
+        @delete="confirmDelete"
+      />
+
+      <!-- Pagination Controls -->
+      <PaginationControls
+        :current-page="ipStore.pagination.current_page"
+        :total-items="ipStore.pagination.total"
+        :per-page="ipStore.pagination.per_page"
+        @page-change="handlePageChange"
+        @page-size-change="handlePageSizeChange"
+      />
+    </template>
 
     <!-- Add IP Modal -->
     <AddIPForm

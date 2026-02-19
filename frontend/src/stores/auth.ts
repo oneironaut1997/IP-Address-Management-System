@@ -39,13 +39,6 @@ function clearTokens(): void {
 }
 
 /**
- * Get access token from localStorage
- */
-function getAccessToken(): string | null {
-  return localStorage.getItem(ACCESS_TOKEN_KEY)
-}
-
-/**
  * Extract user-friendly error message from API errors
  *
  * @param err - The caught error

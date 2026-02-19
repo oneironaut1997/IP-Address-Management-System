@@ -42,13 +42,17 @@ class IPController extends Controller
      *
      * All authenticated users can view all IP addresses.
      * Supports pagination via 'per_page' query parameter (default: 20, max: 100).
+     * Supports search via 'search' query parameter (searches IP, label, comment).
+     * Supports filtering via 'type' query parameter (ipv4/ipv6).
      *
      * @param  Request  $request  The HTTP request
      */
     public function index(Request $request): JsonResponse
     {
         $perPage = min(max((int) $request->input('per_page', 20), 1), 100);
-        $ips = $this->ipService->getAllIPAddresses($perPage);
+        $filters = $this->ipService->buildFilters($request->all());
+        $result = $this->ipService->getAllIPAddresses($perPage, $filters);
+        $ips = $result['data'];
 
         return response()->json([
             'success' => true,
@@ -58,6 +62,8 @@ class IPController extends Controller
                 'per_page' => $ips->perPage(),
                 'total' => $ips->total(),
                 'last_page' => $ips->lastPage(),
+                'ipv4_count' => $result['ipv4_count'],
+                'ipv6_count' => $result['ipv6_count'],
             ],
         ]);
     }

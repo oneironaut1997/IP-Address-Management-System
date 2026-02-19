@@ -36,10 +36,16 @@ class IPServiceTest extends TestCase
 
         $result = $this->ipService->getAllIPAddresses();
 
-        $this->assertCount(3, $result);
+        // getAllIPAddresses returns an array with 'data', 'ipv4_count', 'ipv6_count'
+        $this->assertArrayHasKey('data', $result);
+        $this->assertArrayHasKey('ipv4_count', $result);
+        $this->assertArrayHasKey('ipv6_count', $result);
+
+        $paginatedData = $result['data'];
+        $this->assertCount(3, $paginatedData);
         // Should be ordered by created_at desc
-        $this->assertEquals($ip2->id, $result->first()->id);
-        $this->assertEquals($ip3->id, $result->last()->id);
+        $this->assertEquals($ip2->id, $paginatedData->first()->id);
+        $this->assertEquals($ip3->id, $paginatedData->last()->id);
     }
 
     /**

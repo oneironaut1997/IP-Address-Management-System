@@ -20,22 +20,104 @@ use PhpIP\IP;
 class IPService
 {
     /**
-     * Get all IP addresses with pagination.
+     * Get all IP addresses with pagination and optional filtering.
      *
      * Uses pagination to prevent memory issues with large datasets.
      * Uses select() to limit columns fetched for better performance.
+     * Supports search by IP address, label, or comment (partial match).
+     * Supports filtering by IP type (ipv4/ipv6) and user_id.
      *
      * @param  int  $perPage  Number of items per page (default: 20, max: 100)
-     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
+     * @param  array  $filters  Optional filters (search, type, user_id)
+     * @return array{data: \Illuminate\Contracts\Pagination\LengthAwarePaginator, ipv4_count: int, ipv6_count: int}
      */
-    public function getAllIPAddresses(int $perPage = 20)
+    public function getAllIPAddresses(int $perPage = 20, array $filters = [])
     {
         // Clamp perPage to reasonable bounds
         $perPage = min(max($perPage, 1), 100);
 
-        return IPAddress::select(['id', 'user_id', 'ip_address', 'label', 'comment', 'type', 'created_at', 'updated_at'])
-            ->orderBy('created_at', 'desc')
-            ->paginate($perPage);
+        $query = IPAddress::select(['id', 'user_id', 'ip_address', 'label', 'comment', 'type', 'created_at', 'updated_at'])
+            ->orderBy('created_at', 'desc');
+
+        // Apply filters
+        $this->applyFilters($query, $filters);
+
+        $paginatedResult = $query->paginate($perPage);
+
+        // Get type counts (total, not just current page)
+        // When a type filter is applied, the count for that type equals the total
+        if (! empty($filters['type'])) {
+            $ipv4Count = $filters['type'] === 'ipv4' ? $paginatedResult->total() : 0;
+            $ipv6Count = $filters['type'] === 'ipv6' ? $paginatedResult->total() : 0;
+        } else {
+            // Get counts from database for all IPs (respecting search filter if present)
+            $baseQuery = IPAddress::query();
+            if (! empty($filters['search'])) {
+                $search = $filters['search'];
+                $baseQuery->where(function ($q) use ($search) {
+                    $q->where('ip_address', 'LIKE', "%{$search}%")
+                        ->orWhere('label', 'LIKE', "%{$search}%")
+                        ->orWhere('comment', 'LIKE', "%{$search}%");
+                });
+            }
+            $ipv4Count = (clone $baseQuery)->where('type', 'ipv4')->count();
+            $ipv6Count = (clone $baseQuery)->where('type', 'ipv6')->count();
+        }
+
+        return [
+            'data' => $paginatedResult,
+            'ipv4_count' => $ipv4Count,
+            'ipv6_count' => $ipv6Count,
+        ];
+    }
+
+    /**
+     * Apply filters to the IP address query.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  array  $filters  Filters to apply (search, type, user_id)
+     */
+    protected function applyFilters($query, array $filters): void
+    {
+        // Search by IP address, label, or comment (partial match)
+        if (! empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where(function ($q) use ($search) {
+                $q->where('ip_address', 'LIKE', "%{$search}%")
+                    ->orWhere('label', 'LIKE', "%{$search}%")
+                    ->orWhere('comment', 'LIKE', "%{$search}%");
+            });
+        }
+
+        // Filter by IP type (ipv4/ipv6)
+        if (! empty($filters['type']) && in_array($filters['type'], ['ipv4', 'ipv6'], true)) {
+            $query->where('type', $filters['type']);
+        }
+
+        // Filter by user_id (owner)
+        if (! empty($filters['user_id'])) {
+            $query->where('user_id', $filters['user_id']);
+        }
+    }
+
+    /**
+     * Build filter array from request input.
+     *
+     * @param  array  $input  The request input array
+     * @return array The filtered array containing only valid filter keys
+     */
+    public function buildFilters(array $input): array
+    {
+        $allowedFilters = ['search', 'type', 'user_id'];
+        $filters = [];
+
+        foreach ($allowedFilters as $filter) {
+            if (! empty($input[$filter])) {
+                $filters[$filter] = $input[$filter];
+            }
+        }
+
+        return $filters;
     }
 
     /**

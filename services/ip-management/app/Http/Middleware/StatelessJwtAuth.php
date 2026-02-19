@@ -5,10 +5,10 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Tymon\JWTAuth\Facades\JWTAuth;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Tymon\JWTAuth\Exceptions\TokenExpiredException;
 use Tymon\JWTAuth\Exceptions\TokenInvalidException;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 /**
  * Stateless JWT Authentication Middleware
@@ -22,29 +22,25 @@ class StatelessJwtAuth
 {
     /**
      * Handle an incoming request.
-     *
-     * @param  Request  $request
-     * @param  Closure  $next
-     * @return Response
      */
     public function handle(Request $request, Closure $next): Response
     {
         $token = $this->extractToken($request);
 
-        if (!$token) {
+        if (! $token) {
             return $this->unauthorizedResponse('Authorization token not provided');
         }
 
         try {
             // Parse token without database validation
             $payload = JWTAuth::setToken($token)->getPayload();
-            
+
             // Extract user information from JWT claims
             $userId = $payload->get('sub');
             $role = $payload->get('role', 'regular');
             $email = $payload->get('email');
-            
-            if (!$userId) {
+
+            if (! $userId) {
                 return $this->unauthorizedResponse('Invalid token: missing subject');
             }
 
@@ -52,7 +48,7 @@ class StatelessJwtAuth
             $request->attributes->set('user_id', $userId);
             $request->attributes->set('user_role', $role);
             $request->attributes->set('user_email', $email);
-            
+
             // Also set for Laravel Auth facade compatibility
             $request->attributes->set('jwt_payload', $payload);
 
@@ -61,7 +57,7 @@ class StatelessJwtAuth
         } catch (TokenInvalidException $e) {
             return $this->unauthorizedResponse('Token is invalid');
         } catch (JWTException $e) {
-            return $this->unauthorizedResponse('Token could not be parsed: ' . $e->getMessage());
+            return $this->unauthorizedResponse('Token could not be parsed: '.$e->getMessage());
         }
 
         return $next($request);
@@ -69,15 +65,12 @@ class StatelessJwtAuth
 
     /**
      * Extract JWT token from Authorization header.
-     *
-     * @param  Request  $request
-     * @return string|null
      */
     protected function extractToken(Request $request): ?string
     {
         $header = $request->header('Authorization');
 
-        if (!$header) {
+        if (! $header) {
             return null;
         }
 
@@ -91,9 +84,6 @@ class StatelessJwtAuth
 
     /**
      * Return unauthorized JSON response.
-     *
-     * @param  string  $message
-     * @return Response
      */
     protected function unauthorizedResponse(string $message): Response
     {

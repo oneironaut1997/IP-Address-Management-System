@@ -10,7 +10,7 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import api from '@/api/client'
-import type { IPAddress, IPHistory, IPFormData, APIResponse } from '@/types'
+import type { IPAddress, IPHistory, IPFormData, APIResponse, IPType } from '@/types'
 
 /**
  * Pagination metadata from API response
@@ -22,6 +22,8 @@ interface PaginationMeta {
   last_page: number
   from: number | null
   to: number | null
+  ipv4_count: number
+  ipv6_count: number
 }
 
 /**
@@ -33,6 +35,7 @@ interface PaginationMeta {
  * - IP change history
  * - CRUD operations
  * - Pagination support
+ * - Search and filter support
  */
 export const useIPStore = defineStore('ip', () => {
   // State
@@ -48,7 +51,13 @@ export const useIPStore = defineStore('ip', () => {
     last_page: 1,
     from: null,
     to: null,
+    ipv4_count: 0,
+    ipv6_count: 0,
   })
+
+  // Filter state
+  const searchQuery = ref('')
+  const typeFilter = ref<IPType | ''>('')
 
   // Getters (Computed)
   // Helper to ensure ips.value is always an array
@@ -63,27 +72,49 @@ export const useIPStore = defineStore('ip', () => {
   const ipv4Addresses = computed(() => getIPArray().filter((ip) => ip.type === 'ipv4'))
   const ipv6Addresses = computed(() => getIPArray().filter((ip) => ip.type === 'ipv6'))
   const totalCount = computed(() => pagination.value.total)
+  const hasActiveFilters = computed(() => searchQuery.value !== '' || typeFilter.value !== '')
 
   // Actions
 
   /**
-   * Fetch IP addresses with pagination
+   * Fetch IP addresses with pagination and optional filters
    *
    * @param page - Page number (default: 1)
    * @param perPage - Items per page (default: 20, max: 100)
+   * @param search - Search query for IP, label, or comment
+   * @param type - Filter by IP type (ipv4/ipv6)
    * @throws Error on fetch failure
    */
-  async function fetchIPs(page = 1, perPage = 20): Promise<void> {
+  async function fetchIPs(
+    page = 1,
+    perPage = 20,
+    search?: string,
+    type?: IPType | ''
+  ): Promise<void> {
     loading.value = true
     error.value = null
 
+    // Use provided params or fall back to stored filter state
+    const searchParam = search ?? searchQuery.value
+    const typeParam = type ?? typeFilter.value
+
     try {
-      const { data } = await api.get<APIResponse<IPAddress[]>>('/ip', {
-        params: {
-          page,
-          per_page: Math.min(Math.max(perPage, 1), 100),
-        },
-      })
+      const params: Record<string, unknown> = {
+        page,
+        per_page: Math.min(Math.max(perPage, 1), 100),
+      }
+
+      // Add search filter if provided
+      if (searchParam) {
+        params.search = searchParam
+      }
+
+      // Add type filter if provided
+      if (typeParam) {
+        params.type = typeParam
+      }
+
+      const { data } = await api.get<APIResponse<IPAddress[]>>('/ip', { params })
 
       // Validate and ensure data.data is an array
       // Handle nested Laravel pagination response: { success: true, data: { data: [...], meta: {...} } }
@@ -112,13 +143,16 @@ export const useIPStore = defineStore('ip', () => {
         metaData = (data.data as { meta?: typeof data.meta }).meta
       }
       if (metaData) {
+        const meta = metaData as Record<string, unknown>
         pagination.value = {
-          current_page: metaData.current_page ?? 1,
-          per_page: metaData.per_page ?? 20,
-          total: metaData.total ?? 0,
-          last_page: metaData.last_page ?? 1,
-          from: metaData.from ?? null,
-          to: metaData.to ?? null,
+          current_page: (meta.current_page as number) ?? 1,
+          per_page: (meta.per_page as number) ?? 20,
+          total: (meta.total as number) ?? 0,
+          last_page: (meta.last_page as number) ?? 1,
+          from: (meta.from as number | null) ?? null,
+          to: (meta.to as number | null) ?? null,
+          ipv4_count: (meta.ipv4_count as number) ?? 0,
+          ipv6_count: (meta.ipv6_count as number) ?? 0,
         }
       }
     } catch (err: unknown) {
@@ -252,6 +286,60 @@ export const useIPStore = defineStore('ip', () => {
   }
 
   /**
+   * Change to a specific page
+   *
+   * @param page - Page number to navigate to
+   */
+  async function goToPage(page: number): Promise<void> {
+    await fetchIPs(page, pagination.value.per_page, searchQuery.value, typeFilter.value)
+  }
+
+  /**
+   * Change the number of items per page
+   *
+   * @param perPage - New items per page value
+   */
+  async function changePageSize(perPage: number): Promise<void> {
+    await fetchIPs(1, perPage, searchQuery.value, typeFilter.value) // Reset to first page when changing page size
+  }
+
+  /**
+   * Refresh the current page
+   */
+  async function refresh(): Promise<void> {
+    await fetchIPs(pagination.value.current_page, pagination.value.per_page, searchQuery.value, typeFilter.value)
+  }
+
+  /**
+   * Set search query and fetch results
+   *
+   * @param search - Search query string
+   */
+  async function setSearch(search: string): Promise<void> {
+    searchQuery.value = search
+    await fetchIPs(1, pagination.value.per_page, search, typeFilter.value)
+  }
+
+  /**
+   * Set type filter and fetch results
+   *
+   * @param type - IP type filter (ipv4/ipv6 or empty for all)
+   */
+  async function setTypeFilter(type: IPType | ''): Promise<void> {
+    typeFilter.value = type
+    await fetchIPs(1, pagination.value.per_page, searchQuery.value, type)
+  }
+
+  /**
+   * Clear all filters and fetch results
+   */
+  async function clearFilters(): Promise<void> {
+    searchQuery.value = ''
+    typeFilter.value = ''
+    await fetchIPs(1, pagination.value.per_page, '', '')
+  }
+
+  /**
    * Clear all state
    */
   function clearState(): void {
@@ -259,6 +347,18 @@ export const useIPStore = defineStore('ip', () => {
     currentIP.value = null
     history.value = []
     error.value = null
+    searchQuery.value = ''
+    typeFilter.value = ''
+    pagination.value = {
+      current_page: 1,
+      per_page: 20,
+      total: 0,
+      last_page: 1,
+      from: null,
+      to: null,
+      ipv4_count: 0,
+      ipv6_count: 0,
+    }
   }
 
   return {
@@ -269,10 +369,13 @@ export const useIPStore = defineStore('ip', () => {
     loading,
     error,
     pagination,
+    searchQuery,
+    typeFilter,
     // Getters
     ipv4Addresses,
     ipv6Addresses,
     totalCount,
+    hasActiveFilters,
     // Actions
     fetchIPs,
     createIP,
@@ -280,6 +383,12 @@ export const useIPStore = defineStore('ip', () => {
     deleteIP,
     fetchHistory,
     setCurrentIP,
+    goToPage,
+    changePageSize,
+    refresh,
+    setSearch,
+    setTypeFilter,
+    clearFilters,
     clearState,
   }
 })

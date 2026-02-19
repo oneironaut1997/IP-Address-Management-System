@@ -33,8 +33,20 @@ class ActivityLogController extends Controller
      * Get all activity logs with optional filtering.
      *
      * Retrieves activity logs with related user information.
-     * Supports filtering by event, user_id, and date range.
+     * Supports filtering by event, user_id, date range, and search.
      * Results are ordered by creation date (newest first).
+     *
+     * Query Parameters:
+     * - event: Filter by event type (e.g., 'auth.login', 'auth.logout')
+     * - event_type: Alias for event parameter
+     * - user_id: Filter by user ID (causer_id)
+     * - subject_type: Filter by subject type (entity type)
+     * - entity_type: Alias for subject_type
+     * - subject_id: Filter by subject ID (entity ID)
+     * - from: Filter from date (YYYY-MM-DD or ISO format)
+     * - to: Filter to date (YYYY-MM-DD or ISO format)
+     * - search: Search in event, description, subject_id, and causer_id
+     * - per_page: Items per page (default: 50, max: 100)
      *
      * @param  Request  $request  The HTTP request with optional filters
      * @return JsonResponse The list of activity logs

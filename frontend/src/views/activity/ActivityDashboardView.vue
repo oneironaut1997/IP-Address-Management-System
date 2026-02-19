@@ -2,8 +2,9 @@
 /**
  * Activity Dashboard View
  *
- * Displays system activity logs for super administrators.
- * Includes filtering by event type and detailed log information.
+ * Displays paginated system activity logs for super administrators.
+ * Includes filtering by event type, source type, search, and date range.
+ * All filtering happens on the backend side.
  *
  * @package Views/Activity
  */
@@ -12,7 +13,8 @@ import { ref, onMounted, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useActivityStore } from '@/stores/activity'
 import ActivityTable from '@/components/tables/ActivityTable.vue'
-import type { AuditLog, AuditLogType } from '@/types'
+import PaginationControls from '@/components/common/PaginationControls.vue'
+import type { AuditLog } from '@/types'
 import {
   Shield,
   Loader2,
@@ -27,15 +29,19 @@ import {
   FileText,
   Code,
   Server,
+  Search,
+  Calendar,
 } from 'lucide-vue-next'
 import { cn } from '@/lib/utils'
 
 const authStore = useAuthStore()
 const activityStore = useActivityStore()
 
-const selectedFilter = ref('')
-const selectedTypeFilter = ref<AuditLogType>('all')
 const selectedLog = ref<AuditLog | null>(null)
+
+// Local filter state for debounced search
+const localSearchQuery = ref('')
+let searchTimeout: ReturnType<typeof setTimeout> | null = null
 
 function formatEventType(eventType: string | undefined | null): string {
   if (!eventType || typeof eventType !== 'string') {
@@ -77,26 +83,88 @@ function formatFullDate(dateString: string | undefined | null): string {
   })
 }
 
-function applyFilter(): void {
-  activityStore.setEventFilter(selectedFilter.value)
+/**
+ * Handle search input with debounce
+ */
+function handleSearchInput(): void {
+  if (searchTimeout) {
+    clearTimeout(searchTimeout)
+  }
+  searchTimeout = setTimeout(() => {
+    activityStore.setSearch(localSearchQuery.value)
+  }, 300)
 }
 
-function clearFilter(): void {
-  selectedFilter.value = ''
-  selectedTypeFilter.value = 'all'
-  activityStore.clearFilter()
+/**
+ * Handle type filter change
+ */
+async function handleTypeFilterChange(): Promise<void> {
+  await activityStore.setTypeFilter(activityStore.typeFilter)
 }
 
+/**
+ * Handle event filter change
+ */
+async function handleEventFilterChange(): Promise<void> {
+  await activityStore.setEventFilter(activityStore.eventFilter)
+}
+
+/**
+ * Handle date range filter change
+ */
+async function handleDateRangeChange(): Promise<void> {
+  await activityStore.setDateRange(activityStore.dateFrom, activityStore.dateTo)
+}
+
+/**
+ * Clear all filters
+ */
+async function clearFilters(): Promise<void> {
+  localSearchQuery.value = ''
+  await activityStore.clearFilters()
+}
+
+/**
+ * Show details modal
+ */
 function showDetails(log: AuditLog): void {
   selectedLog.value = log
 }
 
+/**
+ * Refresh logs with current filter and pagination
+ */
 async function refreshLogs(): Promise<void> {
-  await activityStore.fetchAllLogs(selectedTypeFilter.value)
+  await activityStore.refresh()
 }
 
-watch(selectedTypeFilter, () => {
-  refreshLogs()
+/**
+ * Handle page change from pagination component
+ */
+function handlePageChange(page: number): void {
+  activityStore.goToPage(page)
+}
+
+/**
+ * Handle page size change from pagination component
+ */
+function handlePageSizeChange(pageSize: number): void {
+  activityStore.changePageSize(pageSize)
+}
+
+// Watch for type filter changes
+watch(() => activityStore.typeFilter, () => {
+  handleTypeFilterChange()
+})
+
+// Watch for event filter changes
+watch(() => activityStore.eventFilter, () => {
+  handleEventFilterChange()
+})
+
+// Watch for date range changes
+watch([() => activityStore.dateFrom, () => activityStore.dateTo], () => {
+  handleDateRangeChange()
 })
 
 onMounted(() => {
@@ -148,12 +216,28 @@ onMounted(() => {
     <template v-else>
       <!-- Filters -->
       <div class="flex flex-wrap items-end gap-4 p-4 rounded-xl border bg-card">
+        <!-- Search Input -->
+        <div class="flex-1 min-w-[200px]">
+          <label class="text-sm font-medium mb-2 block">Search</label>
+          <div class="relative">
+            <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              v-model="localSearchQuery"
+              type="text"
+              placeholder="Search events, user IDs..."
+              class="w-full rounded-lg border bg-background pl-9 pr-4 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              @input="handleSearchInput"
+            />
+          </div>
+        </div>
+
+        <!-- Source Type Filter -->
         <div class="min-w-[150px]">
           <label class="text-sm font-medium mb-2 block">Source Type</label>
           <div class="relative">
             <Server class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <select
-              v-model="selectedTypeFilter"
+              v-model="activityStore.typeFilter"
               class="w-full rounded-lg border bg-background pl-9 pr-4 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <option value="all">All Sources</option>
@@ -162,14 +246,15 @@ onMounted(() => {
             </select>
           </div>
         </div>
-        <div class="flex-1 min-w-[200px]">
-          <label class="text-sm font-medium mb-2 block">Filter by Event Type</label>
+
+        <!-- Event Type Filter -->
+        <div class="min-w-[180px]">
+          <label class="text-sm font-medium mb-2 block">Event Type</label>
           <div class="relative">
             <Filter class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <select
-              v-model="selectedFilter"
+              v-model="activityStore.eventFilter"
               class="w-full rounded-lg border bg-background pl-9 pr-4 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              @change="applyFilter"
             >
               <option value="">All Events</option>
               <option v-for="type in activityStore.eventTypes" :key="type" :value="type">
@@ -178,14 +263,44 @@ onMounted(() => {
             </select>
           </div>
         </div>
+
+        <!-- Date From Filter -->
+        <div class="min-w-[150px]">
+          <label class="text-sm font-medium mb-2 block">From Date</label>
+          <div class="relative">
+            <Calendar class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              v-model="activityStore.dateFrom"
+              type="date"
+              class="w-full rounded-lg border bg-background pl-9 pr-4 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            />
+          </div>
+        </div>
+
+        <!-- Date To Filter -->
+        <div class="min-w-[150px]">
+          <label class="text-sm font-medium mb-2 block">To Date</label>
+          <div class="relative">
+            <Calendar class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              v-model="activityStore.dateTo"
+              type="date"
+              class="w-full rounded-lg border bg-background pl-9 pr-4 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            />
+          </div>
+        </div>
+
+        <!-- Clear Filters Button -->
         <button
-          v-if="selectedFilter || selectedTypeFilter !== 'all'"
+          v-if="activityStore.hasActiveFilters"
           class="inline-flex items-center justify-center gap-2 rounded-lg border bg-background px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
-          @click="clearFilter"
+          @click="clearFilters"
         >
           <X class="w-4 h-4" />
           Clear
         </button>
+
+        <!-- Refresh Button -->
         <button
           class="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
           :disabled="activityStore.loading"
@@ -211,21 +326,28 @@ onMounted(() => {
         class="flex flex-col items-center justify-center py-12 rounded-xl border bg-card"
       >
         <ScrollText class="w-12 h-12 text-muted-foreground/50 mb-4" />
-        <h3 class="text-lg font-medium mb-1">No Activity Logs</h3>
-        <p class="text-muted-foreground text-sm">There are no activity logs to display</p>
+        <h3 class="text-lg font-medium mb-1">No Activity Logs Found</h3>
+        <p class="text-muted-foreground text-sm">
+          {{ activityStore.hasActiveFilters ? 'Try adjusting your search or filters' : 'There are no activity logs to display' }}
+        </p>
       </div>
 
-      <!-- Activity Table -->
-      <ActivityTable
-        v-else
-        :logs="activityStore.filteredLogs"
-        @view="showDetails"
-      />
+      <!-- Activity Table with Pagination -->
+      <template v-else>
+        <ActivityTable
+          :logs="activityStore.filteredLogs"
+          @view="showDetails"
+        />
 
-      <!-- Stats Summary -->
-      <div v-if="activityStore.logs.length" class="text-sm text-muted-foreground">
-        Showing {{ activityStore.filteredLogs.length }} of {{ activityStore.logs.length }} activity log entries
-      </div>
+        <!-- Pagination Controls -->
+        <PaginationControls
+          :current-page="activityStore.pagination.current_page"
+          :total-items="activityStore.pagination.total"
+          :per-page="activityStore.pagination.per_page"
+          @page-change="handlePageChange"
+          @page-size-change="handlePageSizeChange"
+        />
+      </template>
     </template>
 
     <!-- Details Modal -->
